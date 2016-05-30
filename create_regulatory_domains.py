@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
 """
-Purpose:      Create BED file with regulatory domains from file with TSS information for each gene.
+Purpose:       Create BED file with regulatory domains from file with TSS information for each gene.
 
 Copyright (C): 2016 - Gert Hulselmans
 """
 
+from __future__ import print_function
+
+import argparse
 import os.path
+import sys
 
 
 class ChromSizes:
@@ -239,7 +243,7 @@ class GenesTSSList:
         """
         genes_tss_list = list()
 
-        with open(genes_tss_filename, 'r') as fh:
+        with sys.stdin if genes_tss_filename in ('-', 'stdin') else open(genes_tss_filename, 'r') as fh:
             for line in fh:
                 if line.startswith('#'):
                     continue
@@ -513,7 +517,7 @@ def create_basal_plus_extension_regdoms(genes_tss_list,
                 GenesTSSList object with all genes which you want to consider
                 for making regulatory domains.
     :param maximum_extension:
-                maximum extension size in basepares a regulatory domain can be
+                maximum extension size in base pairs a regulatory domain can be
                 extended if it did not encounter a basal domain of the nearest gene.
     :param basal_up:
                 # bp upstream of TSS for setting the basal start of the basal domain.
@@ -682,37 +686,105 @@ def create_basal_plus_extension_regdoms(genes_tss_list,
 
 
 def main():
-
     # Get genes with TSS for hg19 used by GREAT 3.0:
     #   Website: http://bejerano.stanford.edu/help/display/GREAT/Genes
-    #   Download command: wget -O hg19.great3.0.genes.txt 'http://bejerano.stanford.edu/help/download/attachments/2752609/hg19.great3.0.genes.txt?version=1&modificationDate=1443465966000&api=v2'
+    #   Download command:
+    #     wget -O hg19.great3.0.genes.txt 'http://bejerano.stanford.edu/help/download/attachments/2752609/hg19.great3.0.genes.txt?version=1&modificationDate=1443465966000&api=v2'
+    default_genes_tss_filename = os.path.join(os.path.dirname(__file__), 'hg19.great3.0.genes.txt')
+
+    default_maximum_extension = 1000000
+    default_basal_up = 5000
+    default_basal_down = 1000
+
+    parser = argparse.ArgumentParser(
+        description='Create BED file with regulatory domains from file with TSS information for each gene.'
+    )
+
+    parser.add_argument('--basal-up',
+                        dest='basal_up',
+                        action='store',
+                        type=int,
+                        required=False,
+                        default=default_basal_up,
+                        help='number of bases upstream of TSS to create a basal domain region '
+                             '(default: "{0:d}").'.format(default_basal_up)
+                        )
+    parser.add_argument('--basal-down',
+                        dest='basal_down',
+                        action='store',
+                        type=int,
+                        required=False,
+                        default=default_basal_down,
+                        help='number of bases downstream of TSS to create a basal domain region '
+                             '(default: "{0:d}").'.format(default_basal_down)
+                        )
+    parser.add_argument('--max-ext',
+                        dest='maximum_extension',
+                        action='store',
+                        type=int,
+                        required=False,
+                        default=default_maximum_extension,
+                        help='maximum extension size in base pairs a regulatory domain can be '
+                             'extended if it did not encounter a basal domain of the nearest gene. '
+                             '(default: "{0:d}").'.format(default_maximum_extension)
+                        )
+    parser.add_argument('--genes-tss',
+                        dest='genes_tss_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        default=default_genes_tss_filename,
+                        help='TAB-separated file with 4 (chromosome name, TSS, strand, gene name) or '
+                             '5 (ENSEMBL gene ID, chromosome name, TSS, strand, gene name) columns '
+                             'which is used as input to create the regulatory domains. '
+                             '(default: "{0:s}").'.format(default_genes_tss_filename)
+                        )
+    parser.add_argument('--regdoms',
+                        dest='regulatory_domains_bed_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        default='-',
+                        help='Regulatory domains BED output file (default: "stdout").'
+                        )
+
+    args = parser.parse_args()
 
     # Create a list of GeneTSS objects sorted by chromosome name, TSS, strand and gene name from a TAB-separated file.
     genes_tss_list = GenesTSSList.load_genes_tss_file(
-        genes_tss_filename=os.path.join(os.path.dirname(__file__), 'hg19.great3.0.genes.txt')
+        genes_tss_filename=args.genes_tss_filename
     )
 
     # Calculate the regulatory domains for each gene.
     # See "create_basal_plus_extension_regdoms" for more information.
     regdoms_list = create_basal_plus_extension_regdoms(genes_tss_list=genes_tss_list,
-                                                       maximum_extension=1000000,
-                                                       basal_up=5000,
-                                                       basal_down=1000,
+                                                       maximum_extension=args.maximum_extension,
+                                                       basal_up=args.basal_up,
+                                                       basal_down=args.basal_down,
                                                        chrom_sizes=ChromSizes())
 
+    if args.regulatory_domains_bed_filename in ('-', 'stdout'):
+        regulatory_domains_output_bed_fh = sys.stdout
+    else:
+        regulatory_domains_output_bed_fh = open(args.regulatory_domains_bed_filename, 'w')
+
     # Print the regulatory domain output to standard output.
-    print '# ' + '\t'.join(["chrom",
-                            "chrom_start",
-                            "chrom_start",
-                            "chrom_end",
-                            "name",
-                            "tss",
-                            "strand",
-                            "basal_start",
-                            "basal_end"])
+    print('# chrom',
+          'chrom_start',
+          'chrom_start',
+          'chrom_end',
+          'name',
+          'tss',
+          'strand',
+          'basal_start',
+          'basal_end',
+          sep='\t',
+          file=regulatory_domains_output_bed_fh)
 
     for regdom in regdoms_list:
-        print regdom
+        print(regdom, file=regulatory_domains_output_bed_fh)
+
+    regulatory_domains_output_bed_fh.close()
 
 
 if __name__ == "__main__":
