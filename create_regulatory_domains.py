@@ -13,6 +13,20 @@ import os.path
 import sys
 
 
+# Get genes with TSS for hg19 used by GREAT 3.0:
+#   Website: http://bejerano.stanford.edu/help/display/GREAT/Genes
+#   Download command:
+#     wget -O data/hregulatory_domains/g19.great3.0.genes.txt 'http://bejerano.stanford.edu/help/download/attachments/2752609/hg19.great3.0.genes.txt?version=1&modificationDate=1443465966000&api=v2'
+default_genes_tss_filename = os.path.join(os.path.dirname(__file__),
+                                          'data',
+                                          'regulatory_domains',
+                                          'hg19.great3.0.genes.txt')
+
+default_maximum_extension = 1000000
+default_basal_up = 5000
+default_basal_down = 1000
+
+
 class ChromSizes:
     """
     Set and get chromosome lengths.
@@ -686,16 +700,6 @@ def create_basal_plus_extension_regdoms(genes_tss_list,
 
 
 def main():
-    # Get genes with TSS for hg19 used by GREAT 3.0:
-    #   Website: http://bejerano.stanford.edu/help/display/GREAT/Genes
-    #   Download command:
-    #     wget -O hg19.great3.0.genes.txt 'http://bejerano.stanford.edu/help/download/attachments/2752609/hg19.great3.0.genes.txt?version=1&modificationDate=1443465966000&api=v2'
-    default_genes_tss_filename = os.path.join(os.path.dirname(__file__), 'hg19.great3.0.genes.txt')
-
-    default_maximum_extension = 1000000
-    default_basal_up = 5000
-    default_basal_down = 1000
-
     parser = argparse.ArgumentParser(
         description='Create BED file with regulatory domains from file with TSS information for each gene.'
     )
