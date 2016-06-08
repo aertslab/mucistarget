@@ -540,11 +540,11 @@ def create_basal_plus_extension_regdoms(genes_tss_list,
     :param chrom_sizes:
                 ChromSizes object with chromosome lengths.
 
-    :return: List of RegDom objects.
+    :return: List of RegDom objects per chromosome.
     """
 
-    # Store all regulatory domains in a list.
-    regdoms_list = list()
+    # Store all regulatory domains in a per chromosome list.
+    reg_doms_list_per_chrom = {chrom: list() for chrom in chrom_sizes.chrom_sizes_dict}
 
     # Store basal regulatory domain starts and ends per chromosome.
     basal_starts_per_chrom_dict = {chrom: list() for chrom in chrom_sizes.chrom_sizes_dict}
@@ -553,19 +553,19 @@ def create_basal_plus_extension_regdoms(genes_tss_list,
     # Store gene index for each gene in basal_starts_per_chrom_dict and basal_ends_per_chrom_dict.
     gene_idx_in_per_chrom_dicts_dict = dict()
 
-    # List of curated regulatory domains to add at the end of the regdoms_list.
-    curated_reg_doms_list_to_add = list()
+    # List of curated regulatory domains to add at the end of the reg_doms_list_per_chrom.
+    curated_reg_doms_list_to_add_per_chrom = {chrom: list() for chrom in chrom_sizes.chrom_sizes_dict}
 
     # Get all curated regulatory domains.
     curated_reg_doms = CuratedRegDoms()
 
-    # Loop over GenesTSSList
+    # Loop over GenesTSSList.
     for curr_gene_tss in genes_tss_list:
         if curated_reg_doms.get_curated_reg_doms_for_gene(curr_gene_tss.name):
-            # If the current GeneTSS has a curated regulatory domain, do not add them to the regdom_list yet.
+            # If the current GeneTSS has a curated regulatory domain, do not add them to the reg_doms_list_per_chrom yet.
             # They will be added after all genes with uncurated regulatory domains are added.
             curr_regdom = curated_reg_doms.get_curated_reg_doms_for_gene(curr_gene_tss.name)
-            curated_reg_doms_list_to_add.append(curr_regdom)
+            curated_reg_doms_list_to_add_per_chrom[curr_gene_tss.chrom].append(curr_regdom)
         else:
             # Create a regulatory domain based on the current GeneTSS.
             curr_regdom = RegDom(chrom=curr_gene_tss.chrom,
@@ -578,7 +578,7 @@ def create_basal_plus_extension_regdoms(genes_tss_list,
                                  basal_down=basal_down,
                                  chrom_sizes=chrom_sizes)
 
-            regdoms_list.append(curr_regdom)
+            reg_doms_list_per_chrom[curr_gene_tss.chrom].append(curr_regdom)
 
         # Store basal regulatory domain start and end for the current regulatory domain per chromosome.
         basal_starts_per_chrom_dict[curr_gene_tss.chrom].append(curr_regdom.basal_start)
@@ -595,108 +595,119 @@ def create_basal_plus_extension_regdoms(genes_tss_list,
              curr_gene_tss.tss,
              curr_gene_tss.strand)] = len(basal_starts_per_chrom_dict[curr_gene_tss.chrom]) - 1
 
-    # Loop over all regulatory domains.
-    for idx, curr_regdom in enumerate(regdoms_list):
-        # Get the previous regulatory domain if this is not the first regulatory domain of the list.
-        prev_regdom = regdoms_list[idx - 1] if idx > 0 else None
+    # Loop over all regulatory domains per chromosome.
+    for chrom in reg_doms_list_per_chrom:
+        for idx, curr_regdom in enumerate(reg_doms_list_per_chrom[chrom]):
+            # Get the previous regulatory domain if this is not the first regulatory domain of the list.
+            prev_regdom = (reg_doms_list_per_chrom[chrom][idx - 1]
+                           if idx > 0
+                           else None)
 
-        # Get the next regulatory domain if this is not the last regulatory domain of the list.
-        next_regdom = regdoms_list[idx + 1] if idx < (len(regdoms_list) - 1) else None
+            # Get the next regulatory domain if this is not the last regulatory domain of the list.
+            next_regdom = (reg_doms_list_per_chrom[chrom][idx + 1]
+                           if idx < (len(reg_doms_list_per_chrom[chrom]) - 1)
+                           else None)
 
-        # Extend regulatory domain as much as possible to the left.
-        tmp_start = min(curr_regdom.basal_start,
-                        max(0, curr_regdom.tss - maximum_extension))
+            # Extend regulatory domain as much as possible to the left.
+            tmp_start = min(curr_regdom.basal_start,
+                            max(0, curr_regdom.tss - maximum_extension))
 
-        if prev_regdom and prev_regdom.chrom == curr_regdom.chrom:
-            # The previous regulatory domain was on the same chromosome as the current one.
+            if prev_regdom:
+                if (prev_regdom.tss, prev_regdom.strand) == (curr_regdom.tss, curr_regdom.strand):
+                    # The previous regulatory domain had the same TSS and strand.
+                    tmp_start = min(curr_regdom.basal_start, prev_regdom.chrom_start)
+                else:
+                    # Get the gene index of the current gene in the per chromosome list of the basal_ends_per_chrom_dict
+                    # and substract one.
+                    prev_gene_idx_in_per_chrom_dicts = gene_idx_in_per_chrom_dicts_dict[(curr_regdom.name,
+                                                                                         curr_regdom.chrom,
+                                                                                         curr_regdom.tss,
+                                                                                         curr_regdom.strand)] - 1
 
-            if (prev_regdom.tss, prev_regdom.strand) == (curr_regdom.tss, curr_regdom.strand):
-                # The previous regulatory domain had the same TSS and strand.
-                tmp_start = min(curr_regdom.basal_start, prev_regdom.chrom_start)
-            else:
-                # Get the gene index of the current gene in the per chromosome list of the basal_ends_per_chrom_dict
-                # and substract one.
-                prev_gene_idx_in_per_chrom_dicts = gene_idx_in_per_chrom_dicts_dict[(curr_regdom.name,
+                    if prev_gene_idx_in_per_chrom_dicts >= 1:
+                        # This is the third or higher gene on this chromosome.
+
+                        # Adapt the start site of the current regulatory domain by taking the lowest genomic coordinate of:
+                        #   - the current regulatory basal domain start.
+                        #   - the highest genomic coordinate of:
+                        #       - the previous regulatory basal domain end.
+                        #       - the extend regulatory domain as much as possible to the left.
+                        #       - the highest basal end of all previous genes on the current chromosome
+                        #         (which is not always the previous gene, as strandness plays a role in the basal domain
+                        #         creation).
+                        tmp_start = min(curr_regdom.basal_start,
+                                        max(prev_regdom.basal_end,
+                                            tmp_start,
+                                            max(basal_ends_per_chrom_dict[curr_regdom.chrom][0:prev_gene_idx_in_per_chrom_dicts])
+                                            )
+                                        )
+                    else:
+                        # This is the second gene on this chromosome.
+                        tmp_start = min(curr_regdom.basal_start,
+                                        max(prev_regdom.basal_end, tmp_start))
+
+            # Extend regulatory domain as much as possible to the right.
+            tmp_end = max(curr_regdom.basal_end,
+                          min(chrom_sizes.get_chrom_size_for_chrom(curr_regdom.chrom), curr_regdom.tss + maximum_extension))
+
+            if next_regdom:
+                # The next regulatory domain was on the same chromosome as the current one.
+
+                # Get the gene index of the current gene in the per chromosome list of the basal_starts_per_chrom_dict
+                # and add one.
+                next_gene_idx_in_per_chrom_dicts = gene_idx_in_per_chrom_dicts_dict[(curr_regdom.name,
                                                                                      curr_regdom.chrom,
                                                                                      curr_regdom.tss,
-                                                                                     curr_regdom.strand)] - 1
+                                                                                     curr_regdom.strand)] + 1
 
-                if prev_gene_idx_in_per_chrom_dicts >= 1:
-                    # This is the third or higher gene on this chromosome.
+                # Adapt the end site of the current regulatory domain by taking the highest genomic coordinate of:
+                #   - the current regulatory basal domain end.
+                #   - the lowest genomic coordinate of:
+                #       - the next regulatory basal domain start.
+                #       - the extend regulatory domain as much as possible to the right.
+                #       - the lowest basal start of all next genes on the current chromosome
+                #         (which is not always the next gene, as strandness plays a role in the basal domain creation).
+                tmp_end = max(curr_regdom.basal_end,
+                              min(next_regdom.basal_start,
+                                  tmp_end,
+                                  min(basal_starts_per_chrom_dict[curr_regdom.chrom][next_gene_idx_in_per_chrom_dicts:])
+                                  )
+                              )
 
-                    # Adapt the start site of the current regulatory domain by taking the lowest genomic coordinate of:
-                    #   - the current regulatory basal domain start.
-                    #   - the highest genomic coordinate of:
-                    #       - the previous regulatory basal domain end.
-                    #       - the extend regulatory domain as much as possible to the left.
-                    #       - the highest basal end of all previous genes on the current chromosome
-                    #         (which is not always the previous gene, as strandness plays a role in the basal domain
-                    #         creation).
-                    tmp_start = min(curr_regdom.basal_start,
-                                    max(prev_regdom.basal_end,
-                                        tmp_start,
-                                        max(basal_ends_per_chrom_dict[curr_regdom.chrom][0:prev_gene_idx_in_per_chrom_dicts])
-                                    )
-                                )
-                else:
-                    # This is the second gene on this chromosome.
-                    tmp_start = min(curr_regdom.basal_start,
-                                    max(prev_regdom.basal_end, tmp_start))
+            # Update the regulatory domain start and end in the reg_doms_list_per_chrom.
+            reg_doms_list_per_chrom[chrom][idx].chrom_start = tmp_start
+            reg_doms_list_per_chrom[chrom][idx].chrom_end = tmp_end
 
-        # Extend regulatory domain as much as possible to the right.
-        tmp_end = max(curr_regdom.basal_end,
-                      min(chrom_sizes.get_chrom_size_for_chrom(curr_regdom.chrom), curr_regdom.tss + maximum_extension))
-
-        if next_regdom and next_regdom.chrom == curr_regdom.chrom:
-            # The next regulatory domain was on the same chromosome as the current one.
-
-            # Get the gene index of the current gene in the per chromosome list of the basal_starts_per_chrom_dict
-            # and add one.
-            next_gene_idx_in_per_chrom_dicts = gene_idx_in_per_chrom_dicts_dict[(curr_regdom.name,
-                                                                                 curr_regdom.chrom,
-                                                                                 curr_regdom.tss,
-                                                                                 curr_regdom.strand)] + 1
-
-            # Adapt the end site of the current regulatory domain by taking the highest genomic coordinate of:
-            #   - the current regulatory basal domain end.
-            #   - the lowest genomic coordinate of:
-            #       - the next regulatory basal domain start.
-            #       - the extend regulatory domain as much as possible to the right.
-            #       - the lowest basal start of all next genes on the current chromosome
-            #         (which is not always the next gene, as strandness plays a role in the basal domain creation).
-            tmp_end = max(curr_regdom.basal_end,
-                          min(next_regdom.basal_start,
-                              tmp_end,
-                              min(basal_starts_per_chrom_dict[curr_regdom.chrom][next_gene_idx_in_per_chrom_dicts:])
-                          )
-                      )
-
-        # Update the regulatory domain start and end in the regdoms_list.
-        regdoms_list[idx].chrom_start = tmp_start
-        regdoms_list[idx].chrom_end = tmp_end
-
-        if prev_regdom and (
-                    (prev_regdom.chrom, prev_regdom.tss, prev_regdom.strand) ==
-                    (curr_regdom.chrom, curr_regdom.tss, curr_regdom.strand)
-        ):
-            # The previous regulatory domain has the same chromosome name, TSS and strand.
-
-            prev_idx = idx - 1
-
-            # Fix previous regulatory domain starts and current regulatory domain start as long as
-            # chromosome name, TSS and strand are the same as for the current regulatory domain.
-            while prev_idx >= 0 and (
-                    (regdoms_list[prev_idx].chrom, regdoms_list[prev_idx].tss, regdoms_list[prev_idx].strand) ==
-                    (curr_regdom.chrom, curr_regdom.tss, curr_regdom.strand)
+            if prev_regdom and (
+                        (prev_regdom.tss, prev_regdom.strand) ==
+                        (curr_regdom.tss, curr_regdom.strand)
             ):
-                regdoms_list[prev_idx].chrom_end = max(regdoms_list[prev_idx].chrom_end, curr_regdom.chrom_end)
-                regdoms_list[idx].chrom_start = regdoms_list[prev_idx].chrom_start
-                prev_idx -= 1
+                # The previous regulatory domain has the same chromosome name, TSS and strand.
+
+                prev_idx = idx - 1
+
+                # Fix previous regulatory domain starts and current regulatory domain start as long as
+                # TSS and strand are the same as for the current regulatory domain.
+                while prev_idx >= 0 and (
+                            (reg_doms_list_per_chrom[chrom][prev_idx].tss,
+                             reg_doms_list_per_chrom[chrom][prev_idx].strand) ==
+                            (curr_regdom.tss,
+                             curr_regdom.strand)
+                ):
+                    reg_doms_list_per_chrom[chrom][prev_idx].chrom_end = max(
+                        reg_doms_list_per_chrom[chrom][prev_idx].chrom_end,
+                        curr_regdom.chrom_end
+                    )
+                    reg_doms_list_per_chrom[chrom][idx].chrom_start = \
+                        reg_doms_list_per_chrom[chrom][prev_idx].chrom_start
+
+                    prev_idx -= 1
 
     # Add curated regulatory domains at the end.
-    regdoms_list.extend(curated_reg_doms_list_to_add)
+    for chrom in curated_reg_doms_list_to_add_per_chrom:
+        reg_doms_list_per_chrom[chrom].extend(curated_reg_doms_list_to_add_per_chrom[chrom])
 
-    return regdoms_list
+    return reg_doms_list_per_chrom
 
 
 def main():
@@ -761,11 +772,11 @@ def main():
 
     # Calculate the regulatory domains for each gene.
     # See "create_basal_plus_extension_regdoms" for more information.
-    regdoms_list = create_basal_plus_extension_regdoms(genes_tss_list=genes_tss_list,
-                                                       maximum_extension=args.maximum_extension,
-                                                       basal_up=args.basal_up,
-                                                       basal_down=args.basal_down,
-                                                       chrom_sizes=ChromSizes())
+    reg_doms_list_per_chrom = create_basal_plus_extension_regdoms(genes_tss_list=genes_tss_list,
+                                                                  maximum_extension=args.maximum_extension,
+                                                                  basal_up=args.basal_up,
+                                                                  basal_down=args.basal_down,
+                                                                  chrom_sizes=ChromSizes())
 
     if args.regulatory_domains_bed_filename in ('-', 'stdout'):
         regulatory_domains_output_bed_fh = sys.stdout
@@ -784,8 +795,9 @@ def main():
           sep='\t',
           file=regulatory_domains_output_bed_fh)
 
-    for regdom in regdoms_list:
-        print(regdom, file=regulatory_domains_output_bed_fh)
+    for chrom in sorted(reg_doms_list_per_chrom):
+        for reg_dom in reg_doms_list_per_chrom[chrom]:
+            print(reg_dom, file=regulatory_domains_output_bed_fh)
 
     regulatory_domains_output_bed_fh.close()
 
