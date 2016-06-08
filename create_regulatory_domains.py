@@ -775,7 +775,6 @@ def main():
     # Print the regulatory domain output to standard output.
     print('# chrom',
           'chrom_start',
-          'chrom_start',
           'chrom_end',
           'name',
           'tss',
