@@ -74,18 +74,28 @@ class VCFmut:
             chr10__10011659__A__AAT__INS
             chr10__100061062__C__T__SNV
 
-        :param mut_id: mutation ID
-        :return: VCFmut object
+        :param mut_id: mutation ID.
+        :return: VCFmut object.
         """
 
-        chrom, start, ref, mut = mut_id.split('__')[0:4]
+        if mut_id.startswith('#'):
+            return None
+
+        try:
+            chrom, start, ref, mut = mut_id.split('__')[0:4]
+        except ValueError:
+            raise ValueError(
+                'Mutation ID "{0:s}" is not valid.'.format(
+                    mut_id
+                )
+            )
 
         return VCFmut(chrom, start, ref, mut)
 
     @staticmethod
     def from_bedlike_mut_id(bedlike_mut_id):
         """
-        Create a VCFmut object from a BED like mutation ID.
+        Create a VCFmut object from a BED-like mutation ID.
 
         Examples:
             chr10_100038800_100038801_TTTTG_-----_DEL
@@ -93,11 +103,21 @@ class VCFmut:
             chr10_100142677_100142678_T_-_INDEL
             chr10_100061061_100061062_C_T_SNP
 
-        :param bedlike_mut_id: BED like mutation ID
-        :return: VCFmut object
+        :param bedlike_mut_id: BED-like mutation ID.
+        :return: VCFmut object.
         """
 
-        chrom, tmp1, start, ref, mut, mut_type = bedlike_mut_id.split('_')[0:6]
+        if bedlike_mut_id.startswith('#'):
+            return None
+
+        try:
+            chrom, tmp1, start, ref, mut, mut_type = bedlike_mut_id.split('_')[0:6]
+        except ValueError:
+            raise ValueError(
+                'BED-like mutation ID "{0:s}" is not valid.'.format(
+                    bedlike_mut_id
+                )
+            )
 
         if mut_type == 'DEL' or (mut_type == 'INDEL' and mut[0] == '-'):
             # Fix start position and add additional start base for deletion and remove dashes.
@@ -119,15 +139,25 @@ class VCFmut:
         return VCFmut(chrom, start, ref, mut)
 
     @staticmethod
-    def from_vcf(vcf_line):
+    def from_vcf_line(vcf_line):
         """
         Create a VCFmut object from a entry from a VCF file (column 1, 2, 4 and 5 are used).
 
-        :param vcf_line: line from VCF file
-        :return: VCFmut object
+        :param vcf_line: line from VCF file.
+        :return: VCFmut object.
         """
 
-        chrom, start, name, ref, mut = vcf_line.split('\t')[0:5]
+        if vcf_line.startswith('#'):
+            return None
+
+        try:
+            chrom, start, name, ref, mut = vcf_line.rstrip('\r\n').split('\t')[0:5]
+        except ValueError:
+            raise ValueError(
+                'VCF line "{0:s}" needs to contain at least 5 columns.'.format(
+                    vcf_line
+                )
+            )
 
         return VCFmut(chrom, start, ref, mut)
 
