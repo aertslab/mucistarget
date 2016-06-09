@@ -90,6 +90,7 @@ class VCFmut:
         Examples:
             chr10_100038800_100038801_TTTTG_-----_DEL
             chr10_10011659_10011660_--_AT_INS
+            chr10_100142677_100142678_T_-_INDEL
             chr10_100061061_100061062_C_T_SNP
 
         :param bedlike_mut_id: BED like mutation ID
@@ -98,7 +99,7 @@ class VCFmut:
 
         chrom, tmp1, start, ref, mut, mut_type = bedlike_mut_id.split('_')[0:6]
 
-        if mut_type == 'DEL':
+        if mut_type == 'DEL' or (mut_type == 'INDEL' and mut[0] == '-'):
             # Fix start position and add additional start base for deletion and remove dashes.
             start = int(start) - 1
             ref = 'N' + ref
@@ -106,7 +107,7 @@ class VCFmut:
             ref_at_first_pos = VCFmut(chrom, start, ref, mut).get_reference_sequence_at_vcfmut().tostring()[0]
             ref = ref_at_first_pos + ref[1:]
             mut = ref_at_first_pos
-        elif mut_type == 'INS':
+        elif mut_type == 'INS' or (mut_type == 'INDEL' and ref[0] == '-'):
             # Fix start position and add additional start base for insertion and remove dashes.
             start = int(start) - 1
             ref = 'N'
