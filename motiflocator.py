@@ -136,8 +136,11 @@ def calculate_motiflocator_delta_scores(fasta_string,
             # MotifLocator score.
             score = float(columns[5])
 
+            # Motif name.
+            motif_name = columns[8].split('"')[1]
+
             # Motif ID.
-            motif_id = columns[8].split('"')[1]
+            motif_id = motifsinfo.MotifsInfo.get_motif_id(motif_name)
 
             # Extract info from the FASTA sequence ID constructed by VCFmut.make_fasta_for_wt_and_mut().
             vcf_mut, bp_upstream, bp_downstream, is_wt = mutations.VCFmut.from_fasta_seq_id(fasta_seq_id)
