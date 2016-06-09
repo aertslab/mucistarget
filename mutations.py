@@ -356,12 +356,12 @@ class VCFmut:
         )
 
     def __str__(self):
-        return '{0:s}\t{1:d}\t{2:s}\t{3:s}\\t{4:s}\t{5:s}'.format(self.chrom,
-                                                                  self.start,
-                                                                  self.ref,
-                                                                  self.mut,
-                                                                  self.mut_type,
-                                                                  self.mut_id)
+        return '{0:s}\t{1:d}\t{2:s}\t{3:s}\t{4:s}\t{5:s}'.format(self.chrom,
+                                                                 self.start,
+                                                                 self.ref,
+                                                                 self.mut,
+                                                                 self.mut_type,
+                                                                 self.mut_id)
 
     def __repr__(self):
         return '<VCFmut>\n' \
