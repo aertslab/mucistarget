@@ -93,6 +93,24 @@ class VCFmut:
         return VCFmut(chrom, start, ref, mut)
 
     @staticmethod
+    def from_mut_ids_file(mut_ids_filename):
+        """
+        Create VCFmut objects from a file which contains mutation IDs.
+
+        :param mut_ids_filename: Filename which contains a list of mutation IDs.
+        :return: yield VCFmut objects for each mutation ID in the mut_ids_filename.
+        """
+
+        with open(mut_ids_filename, 'r') as mut_ids_fh:
+            for line in mut_ids_fh:
+                mut_id = line.rstrip('\r\n')
+
+                if mut_id.startswith('#'):
+                    continue
+
+                yield VCFmut.from_mut_id(mut_id)
+
+    @staticmethod
     def from_bedlike_mut_id(bedlike_mut_id):
         """
         Create a VCFmut object from a BED-like mutation ID.
@@ -139,6 +157,24 @@ class VCFmut:
         return VCFmut(chrom, start, ref, mut)
 
     @staticmethod
+    def from_bedlike_mut_ids_file(bedlike_mut_ids_filename):
+        """
+        Create VCFmut objects from a file which contains BED-like mutation IDs.
+
+        :param bedlike_mut_ids_filename: Filename which contains a list of BED-like mutation IDs.
+        :return: yield VCFmut objects for each mutation ID in the bedlike_mut_ids_filename.
+        """
+
+        with open(bedlike_mut_ids_filename, 'r') as bedlike_mut_ids_fh:
+            for line in bedlike_mut_ids_fh:
+                bedlike_mut_id = line.rstrip('\r\n')
+
+                if bedlike_mut_id.startswith('#'):
+                    continue
+
+                yield VCFmut.from_bedlike_mut_id(bedlike_mut_id)
+
+    @staticmethod
     def from_vcf_line(vcf_line):
         """
         Create a VCFmut object from a entry from a VCF file (column 1, 2, 4 and 5 are used).
@@ -160,6 +196,22 @@ class VCFmut:
             )
 
         return VCFmut(chrom, start, ref, mut)
+
+    @staticmethod
+    def from_vcf_file(vcf_filename):
+        """
+        Create VCFmut objects from a VCF file.
+
+        :param vcf_filename: VCF filename.
+        :return: yield a VCFmut object for each mutation in the VCF file.
+        """
+
+        with open(vcf_filename, 'r') as vcf_fh:
+            for vcf_line in vcf_fh:
+                if vcf_line.startswith('#'):
+                    continue
+
+                yield VCFmut.from_vcf_line(vcf_line)
 
     @staticmethod
     def from_fasta_seq_id(fasta_seq_id):
