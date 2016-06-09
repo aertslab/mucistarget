@@ -7,6 +7,7 @@ Copyright (C): 2016 - Gert Hulselmans
 from __future__ import print_function
 
 import array
+import numpy
 import os.path
 
 import pyfasta
@@ -56,13 +57,35 @@ class VCFmut:
 
     # Calculate the regulatory domains for each gene.
     # See "create_basal_plus_extension_regdoms" for more information.
-    regdoms_list = create_regulatory_domains.create_basal_plus_extension_regdoms(
+    reg_doms_list_per_chrom = create_regulatory_domains.create_basal_plus_extension_regdoms(
         genes_tss_list=genes_tss_list,
         maximum_extension=create_regulatory_domains.default_maximum_extension,
         basal_up=create_regulatory_domains.default_basal_up,
         basal_down=create_regulatory_domains.default_basal_down,
         chrom_sizes=create_regulatory_domains.ChromSizes()
     )
+
+    # Store start and end position of each regulatory domain in a per chromosome numpy array.
+    reg_doms_start_end_array_per_chrom = {
+        chrom: numpy.array(
+            [
+                [reg_dom.chrom_start, reg_dom.chrom_end]
+                for reg_dom in reg_doms
+            ]
+        )
+        for chrom, reg_doms in reg_doms_list_per_chrom.iteritems()
+    }
+
+    # Store gene name for each regulatory domain in a per chromosome numpy array.
+    reg_doms_genes_array_per_chrom = {
+        chrom: numpy.array(
+            [
+                reg_dom.name
+                for reg_dom in reg_doms
+            ]
+        )
+        for chrom, reg_doms in reg_doms_list_per_chrom.iteritems()
+    }
 
     @staticmethod
     def from_mut_id(mut_id):
@@ -422,9 +445,23 @@ class VCFmut:
 
         :return: gene names which regulatory domains contain the mutation.
         """
-        return {regdom.name
-                for regdom in VCFmut.regdoms_list
-                if regdom.chrom == self.chrom and regdom.chrom_start <= self.start <= regdom.chrom_end}
+
+        # Get associated genes for a mutation by getting all gene names located on the same chromosome on which the
+        # mutation is located ( = VCFmut.reg_doms_genes_array_per_chrom[self.chrom] ) for which the regulatory domain
+        # of each of those genes meets the following conditions:
+        #   - The start position of the regulatory domain of a gene
+        #     ( = VCFmut.reg_doms_start_end_array_per_chrom[self.chrom][:, 0] )
+        #     is lower than or equal to the mutation position.
+        #  - The end position of the regulatory domain of a gene
+        #     ( = VCFmut.reg_doms_start_end_array_per_chrom[self.chrom][:, 1] )
+        #     is greater than or equal to the mutation position.
+        return set(
+            VCFmut.reg_doms_genes_array_per_chrom[self.chrom][
+                (VCFmut.reg_doms_start_end_array_per_chrom[self.chrom][:, 0] <= self.start)
+                &
+                (VCFmut.reg_doms_start_end_array_per_chrom[self.chrom][:, 1] >= self.start)
+            ].tolist()
+        )
 
     def get_reference_sequence_at_vcfmut(self):
         """
