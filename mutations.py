@@ -6,7 +6,6 @@ Copyright (C): 2016 - Gert Hulselmans
 
 from __future__ import print_function
 
-import array
 import numpy
 import os.path
 
@@ -165,7 +164,7 @@ class VCFmut:
             start = int(start) - 1
             ref = 'N' + ref
             mut = 'N'
-            ref_at_first_pos = VCFmut(chrom, start, ref, mut).get_reference_sequence_at_vcfmut().tostring()[0]
+            ref_at_first_pos = VCFmut(chrom, start, ref, mut).get_reference_sequence_at_vcfmut()[0]
             ref = ref_at_first_pos + ref[1:]
             mut = ref_at_first_pos
         elif mut_type == 'INS' or (mut_type == 'INDEL' and ref[0] == '-'):
@@ -173,7 +172,7 @@ class VCFmut:
             start = int(start) - 1
             ref = 'N'
             mut = 'N' + mut
-            ref_at_first_pos = VCFmut(chrom, start, ref, mut).get_reference_sequence_at_vcfmut().tostring()[0]
+            ref_at_first_pos = VCFmut(chrom, start, ref, mut).get_reference_sequence_at_vcfmut()[0]
             ref = ref_at_first_pos
             mut = ref_at_first_pos + mut[1:]
 
@@ -474,10 +473,8 @@ class VCFmut:
         mut_start = self.start
         mut_end = self.start + (len(self.ref) - 1)
 
-        ref_seq_at_mut_pos = array.array('c')
-
         # Reference sequence at the mutation position.
-        ref_seq_at_mut_pos.fromstring(
+        ref_seq_at_mut_pos = str(
             GenomicFasta.fasta_sequences.sequence(
                 {'chr': self.chrom,
                  'start': mut_start,
@@ -495,7 +492,7 @@ class VCFmut:
         :param bp_upstream: Number of base pairs before mutation start.
         :param bp_downstream: Number of base pairs after mutation end.
 
-        :return: ref_seq_before_mut_pos, ref_seq_at_mut_pos, ref_sef_after_mut_pos
+        :return: ref_seq_before_mut_pos, ref_seq_at_mut_pos, ref_seq_after_mut_pos
         """
 
         # Calculate one-based closed interval coordinates and make sure chromosome boundaries are not crossed.
@@ -505,12 +502,8 @@ class VCFmut:
         after_mut_end = min(mut_end + bp_downstream,
                             GenomicFasta.chromosome_size(self.chrom))
 
-        ref_seq_before_mut_pos = array.array('c')
-        ref_seq_at_mut_pos = array.array('c')
-        ref_sef_after_mut_pos = array.array('c')
-
         # Reference sequence before mutation position.
-        ref_seq_before_mut_pos.fromstring(
+        ref_seq_before_mut_pos = str(
             GenomicFasta.fasta_sequences.sequence(
                 {'chr': self.chrom,
                  'start': before_mut_start,
@@ -520,7 +513,7 @@ class VCFmut:
         )
 
         # Reference sequence at the mutation position.
-        ref_seq_at_mut_pos.fromstring(
+        ref_seq_at_mut_pos = str(
             GenomicFasta.fasta_sequences.sequence(
                 {'chr': self.chrom,
                  'start': mut_start,
@@ -530,7 +523,7 @@ class VCFmut:
         )
 
         # Reference sequence before after mutation position.
-        ref_sef_after_mut_pos.fromstring(
+        ref_seq_after_mut_pos = str(
             GenomicFasta.fasta_sequences.sequence(
                 {'chr': self.chrom,
                  'start': mut_end + 1,
@@ -539,7 +532,7 @@ class VCFmut:
             )
         )
 
-        return ref_seq_before_mut_pos, ref_seq_at_mut_pos, ref_sef_after_mut_pos
+        return ref_seq_before_mut_pos, ref_seq_at_mut_pos, ref_seq_after_mut_pos
 
     def make_fasta_for_wt_and_mut(self, bp_upstream, bp_downstream, allow_first_reference_base_to_be_N=False):
         """
@@ -560,10 +553,10 @@ class VCFmut:
 
         (ref_seq_before_mut_pos,
          ref_seq_at_mut_pos,
-         ref_sef_after_mut_pos) = self.get_reference_sequences_around_vcfmut(bp_upstream, bp_downstream)
+         ref_seq_after_mut_pos) = self.get_reference_sequences_around_vcfmut(bp_upstream, bp_downstream)
 
         # Get reference sequence for mutation position from genome.
-        genome_ref_for_mut = self.get_reference_sequence_at_vcfmut().tostring()
+        genome_ref_for_mut = self.get_reference_sequence_at_vcfmut()
 
         # Set mutation sequence, so start "N" can be changed to reference sequence if necessary.
         mut = self.mut
@@ -591,14 +584,14 @@ class VCFmut:
                 )
 
         fasta_string = '>{0:s}__bp_up_{1:d}__bp_down_{2:d}__wt\n'.format(self.mut_id, bp_upstream, bp_downstream) \
-                       + ref_seq_before_mut_pos.tostring() \
-                       + ref_seq_at_mut_pos.tostring() \
-                       + ref_sef_after_mut_pos.tostring() \
+                       + ref_seq_before_mut_pos \
+                       + ref_seq_at_mut_pos \
+                       + ref_seq_after_mut_pos \
                        + '\n' \
                        + '>{0:s}__bp_up_{1:d}__bp_down_{2:d}__mut\n'.format(self.mut_id, bp_upstream, bp_downstream) \
-                       + ref_seq_before_mut_pos.tostring() \
+                       + ref_seq_before_mut_pos \
                        + mut \
-                       + ref_sef_after_mut_pos.tostring() \
+                       + ref_seq_after_mut_pos \
                        + '\n'
 
         return fasta_string
