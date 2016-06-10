@@ -113,7 +113,7 @@ def calculate_motiflocator_delta_scores(fasta_string,
                             '-f', '/dev/stdin',
                             '-b', background_motiflocator_filename,
                             '-m', matrix_filename,
-                            '-t', '0.0,'
+                            '-t', '0.0',
                             '-s', '1',
                             '-a', '0']
 
