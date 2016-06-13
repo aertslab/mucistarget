@@ -119,8 +119,10 @@ def calculate_motiflocator_delta_scores(fasta_string,
                             '-s', '1',
                             '-a', '0']
 
-    (motiflocator_command_stdout_data, motiflocator_command_stderr_data) = command.run_cmd(cmd=motiflocator_command,
-                                                                                           stdin=fasta_string)
+    (motiflocator_command_stdout_data, motiflocator_command_stderr_data) = command.run_cmd(
+        cmd=motiflocator_command,
+        stdin=fasta_string.encode('utf-8')
+    )
 
     motiflocator_max_scores_wt_mut = dict()
     prev_fasta_seq_id = None
