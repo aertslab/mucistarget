@@ -8,6 +8,8 @@ from __future__ import print_function
 
 import os.path
 
+from io import BytesIO
+
 import command
 import mutations
 import motifsinfo
@@ -123,79 +125,80 @@ def calculate_motiflocator_delta_scores(fasta_string,
     motiflocator_max_scores_wt_mut = dict()
     prev_fasta_seq_id = None
 
-    for gff_line in motiflocator_command_stdout_data.split('\n'):
-        columns = gff_line.split('\t')
+    with BytesIO(motiflocator_command_stdout_data) as gff_fh:
+        for gff_line in gff_fh:
+            columns = gff_line.split('\t')
 
-        if len(columns) == 9:
-            # FASTA sequence ID constructed by VCFmut.make_fasta_for_wt_and_mut().
-            fasta_seq_id = columns[0]
+            if len(columns) == 9:
+                # FASTA sequence ID constructed by VCFmut.make_fasta_for_wt_and_mut().
+                fasta_seq_id = columns[0]
 
-            # Motif start and end positions (one-based).
-            motif_start_pos = int(columns[3])
-            motif_end_pos = int(columns[4])
+                # Motif start and end positions (one-based).
+                motif_start_pos = int(columns[3])
+                motif_end_pos = int(columns[4])
 
-            # MotifLocator score.
-            score = float(columns[5])
+                # MotifLocator score.
+                score = float(columns[5])
 
-            # Motif name.
-            motif_name = columns[8].split('"')[1]
+                # Motif name.
+                motif_name = columns[8].split('"')[1]
 
-            # Motif ID.
-            motif_id = motifsinfo.MotifsInfo.get_motif_id(motif_name)
+                # Motif ID.
+                motif_id = motifsinfo.MotifsInfo.get_motif_id(motif_name)
 
-            if fasta_seq_id != prev_fasta_seq_id:
-                # Extract info from the FASTA sequence ID constructed by VCFmut.make_fasta_for_wt_and_mut() only when
-                # we see an new FASTA sequence ID.
-                vcf_mut, bp_upstream, bp_downstream, is_wt = mutations.VCFmut.from_fasta_seq_id(fasta_seq_id)
+                if fasta_seq_id != prev_fasta_seq_id:
+                    # Extract info from the FASTA sequence ID constructed by VCFmut.make_fasta_for_wt_and_mut() only when
+                    # we see an new FASTA sequence ID.
+                    vcf_mut, bp_upstream, bp_downstream, is_wt = mutations.VCFmut.from_fasta_seq_id(fasta_seq_id)
 
-                # Store current FASTA sequence ID for next iteration.
-                prev_fasta_seq_id = fasta_seq_id
+                    # Store current FASTA sequence ID for next iteration.
+                    prev_fasta_seq_id = fasta_seq_id
 
-            # Set initial values for wildtype and mutant MotifLocator score for each motif.
-            motiflocator_max_scores_wt_mut.setdefault(motif_id, [0.0, 0.0])
+                # Set initial values for wildtype and mutant MotifLocator score for each motif.
+                motiflocator_max_scores_wt_mut.setdefault(motif_id, [0.0, 0.0])
 
-            # The lowest possible motif start position we care about is the same for both wildtype and mutant sequences
-            # and starts at that position where the last position of the motif overlaps with the first position of the
-            # reference/mutation where the mutation is introduced.
-            lowest_motif_start_pos_to_consider = (
-                bp_upstream + 1 -
-                (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1)
-            )
-
-            if is_wt:
-                # For wildtype sequence.
-
-                # The highest possible motif end position we care about ends at that position where the first position
-                # of the motif overlaps with the last position of the reference sequence with will be altered by the
-                # mutation.
-                highest_motif_end_pos_to_consider = (
-                    (bp_upstream + 1) +
-                    (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1) +
-                    (len(vcf_mut.ref) - 1)
+                # The lowest possible motif start position we care about is the same for both wildtype and mutant sequences
+                # and starts at that position where the last position of the motif overlaps with the first position of the
+                # reference/mutation where the mutation is introduced.
+                lowest_motif_start_pos_to_consider = (
+                    bp_upstream + 1 -
+                    (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1)
                 )
 
-                if (motif_start_pos >= lowest_motif_start_pos_to_consider and
-                            motif_end_pos <= highest_motif_end_pos_to_consider):
-                    if motiflocator_max_scores_wt_mut[motif_id][0] < score:
-                        # Update maximum MotifLocator score for wildtype sequence for the current motif.
-                        motiflocator_max_scores_wt_mut[motif_id][0] = score
-            else:
-                # For mutated sequence.
+                if is_wt:
+                    # For wildtype sequence.
 
-                # The highest possible motif end position we care about ends at that position where the first position
-                # of the motif overlaps with the last position of the mutant sequence with will be altered by the
-                # mutation.
-                highest_motif_end_pos_to_consider = (
-                    (bp_upstream + 1) +
-                    (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1) +
-                    (len(vcf_mut.mut) - 1)
-                )
+                    # The highest possible motif end position we care about ends at that position where the first position
+                    # of the motif overlaps with the last position of the reference sequence with will be altered by the
+                    # mutation.
+                    highest_motif_end_pos_to_consider = (
+                        (bp_upstream + 1) +
+                        (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1) +
+                        (len(vcf_mut.ref) - 1)
+                    )
 
-                if (motif_start_pos >= lowest_motif_start_pos_to_consider and
-                            motif_end_pos <= highest_motif_end_pos_to_consider):
-                    if motiflocator_max_scores_wt_mut[motif_id][1] < score:
-                        # Update maximum MotifLocator score for mutant sequence for the current motif.
-                        motiflocator_max_scores_wt_mut[motif_id][1] = score
+                    if (motif_start_pos >= lowest_motif_start_pos_to_consider and
+                                motif_end_pos <= highest_motif_end_pos_to_consider):
+                        if motiflocator_max_scores_wt_mut[motif_id][0] < score:
+                            # Update maximum MotifLocator score for wildtype sequence for the current motif.
+                            motiflocator_max_scores_wt_mut[motif_id][0] = score
+                else:
+                    # For mutated sequence.
+
+                    # The highest possible motif end position we care about ends at that position where the first position
+                    # of the motif overlaps with the last position of the mutant sequence with will be altered by the
+                    # mutation.
+                    highest_motif_end_pos_to_consider = (
+                        (bp_upstream + 1) +
+                        (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1) +
+                        (len(vcf_mut.mut) - 1)
+                    )
+
+                    if (motif_start_pos >= lowest_motif_start_pos_to_consider and
+                                motif_end_pos <= highest_motif_end_pos_to_consider):
+                        if motiflocator_max_scores_wt_mut[motif_id][1] < score:
+                            # Update maximum MotifLocator score for mutant sequence for the current motif.
+                            motiflocator_max_scores_wt_mut[motif_id][1] = score
 
     motiflocator_max_scores_wt_mut_delta_above_threshold = dict()
 
