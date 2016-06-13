@@ -6,8 +6,13 @@ Copyright (C): 2016 - Gert Hulselmans
 
 from __future__ import print_function
 
-import subprocess
+import os
 import sys
+
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 
 def run_cmd(cmd, stdin=None):
@@ -21,10 +26,19 @@ def run_cmd(cmd, stdin=None):
 
     try:
         pid = subprocess.Popen(args=cmd,
+                               bufsize=1,
+                               executable=None,
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
-                               shell=False)
+                               preexec_fn=None,
+                               close_fds=False,
+                               shell=False,
+                               cwd=None,
+                               env=None,
+                               universal_newlines=False,
+                               startupinfo=None,
+                               creationflags=0)
         stdout_data, stderr_data = pid.communicate(stdin)
     except OSError as msg:
         print("\nERROR during execution of '" + ' '.join(cmd) + "': " + str(msg), file=sys.stderr)
