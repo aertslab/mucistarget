@@ -149,39 +149,62 @@ def main():
             tempfile.NamedTemporaryFile() as matrix_min_motif_size_26_fh, \
             open(args.output_filename, 'w') as output_fh:
 
-        # Write temporary file with PWMs in INCLUSive format which length is smaller than or equal to 15.
-        matrix_max_motif_size_15_fh.write(
-            motifsinfo.MotifsInfo.get_pwms(
-                motif_ids=motif_ids_set,
-                min_motif_length=None,
-                max_motif_length=15,
-                header=True
-            )
-        )
-        matrix_max_motif_size_15_fh.flush()
+        filtered_motifs_on_length_dict = dict()
 
-        # Write temporary file with PWMs in INCLUSive format which length is greater than 15 and smaller than or equal to 25.
-        matrix_min_motif_size_16_max_motif_size_25_fh.write(
-            motifsinfo.MotifsInfo.get_pwms(
-                motif_ids=motif_ids_set,
-                min_motif_length=16,
-                max_motif_length=25,
-                header=True
-            )
+        # Get all motifs with a motif length smaller than or equal to 15 in a FilterMotifsOnLength() object.
+        filtered_motifs_on_length_dict['max_motif_size_15'] = motifsinfo.FilterMotifsOnLength(
+            motif_ids=motif_ids_set,
+            bp_upstream=20,
+            bp_downstream=20,
+            min_motif_length=None,
+            max_motif_length=15,
+            header=True,
+            matrix_fh=matrix_max_motif_size_15_fh
         )
-        matrix_min_motif_size_16_max_motif_size_25_fh.flush()
 
-        # Write temporary file with PWMs in INCLUSive format which length is greater than 25.
-        matrix_min_motif_size_26_fh.write(
-            motifsinfo.MotifsInfo.get_pwms(
-                motif_ids=motif_ids_set,
-                min_motif_length=26,
-                max_motif_length=None,
-                header=True
-            )
+        # Get all motifs with a motif length greater than 15 and smaller than or equal to 25  in a
+        # FilterMotifsOnLength() object.
+        filtered_motifs_on_length_dict['min_motif_size_16_max_motif_size_25'] = motifsinfo.FilterMotifsOnLength(
+            motif_ids=motif_ids_set,
+            bp_upstream=30,
+            bp_downstream=30,
+            min_motif_length=16,
+            max_motif_length=25,
+            header=True,
+            matrix_fh=matrix_min_motif_size_16_max_motif_size_25_fh
         )
-        matrix_min_motif_size_26_fh.flush()
 
+        # Get all motifs with a motif length greater than 25 in a FilterMotifsOnLength() object.
+        filtered_motifs_on_length_dict['min_motif_size_26'] = motifsinfo.FilterMotifsOnLength(
+            motif_ids=motif_ids_set,
+            bp_upstream=60,
+            bp_downstream=60,
+            min_motif_length=26,
+            max_motif_length=None,
+            header=True,
+            matrix_fh=matrix_min_motif_size_26_fh
+        )
+
+        # Store the keys in a separate list.
+        filtered_motifs_on_length_keys = [
+            'max_motif_size_15',
+            'min_motif_size_16_max_motif_size_25',
+            'min_motif_size_26',
+        ]
+
+        # Loop over the list.
+        for filtered_motifs_on_length_key in filtered_motifs_on_length_keys:
+            if filtered_motifs_on_length_dict[filtered_motifs_on_length_key].has_motif_ids:
+                # Write temporary file with PWMs in INCLUSive format.
+                filtered_motifs_on_length_dict[filtered_motifs_on_length_key].write_matrix_file()
+            else:
+                # Remove key from dictionary if the FilterMotifsOnLength() object did not retain any motif IDs.
+                del filtered_motifs_on_length_dict[filtered_motifs_on_length_key]
+
+                # Also remove the entry from the filtered_motifs_on_length_keys list.
+                filtered_motifs_on_length_keys.remove(filtered_motifs_on_length_key)
+
+        # Write header to the output file.
         print('# chrom',
               'start',
               'reference',
@@ -220,29 +243,19 @@ def main():
 
                 motiflocators_start_time = time.time()
 
-                # Score mutation with MotifLocator with motifs which length is smaller than or equal to 15.
-                motiflocator_delta_scores_max_motif_size_15 = motiflocator.calculate_motiflocator_delta_scores(
-                    fasta_string=vcf_mut.make_fasta_for_wt_and_mut(bp_upstream=20, bp_downstream=20),
-                    matrix_filename=matrix_max_motif_size_15_fh.name
-                )
-
-                # Score mutation with MotifLocator with motifs which length is greater than 15 and smaller than or equal to 25.
-                motiflocator_delta_scores_min_motif_size_16_max_motif_size_25 = motiflocator.calculate_motiflocator_delta_scores(
-                    fasta_string=vcf_mut.make_fasta_for_wt_and_mut(bp_upstream=30, bp_downstream=30),
-                    matrix_filename=matrix_min_motif_size_16_max_motif_size_25_fh.name
-                )
-
-                # Score mutation with MotifLocator with motifs which length is greater than 25.
-                motiflocator_delta_scores_min_motif_size_26 = motiflocator.calculate_motiflocator_delta_scores(
-                    fasta_string=vcf_mut.make_fasta_for_wt_and_mut(bp_upstream=60, bp_downstream=60),
-                    matrix_filename=matrix_min_motif_size_26_fh.name
-                )
-
-                # Combine all individual dictionaries with MotifLocator delta scores.
                 motiflocator_delta_scores = dict()
-                motiflocator_delta_scores.update(motiflocator_delta_scores_max_motif_size_15)
-                motiflocator_delta_scores.update(motiflocator_delta_scores_min_motif_size_16_max_motif_size_25)
-                motiflocator_delta_scores.update(motiflocator_delta_scores_min_motif_size_26)
+
+                for filtered_motifs_on_length_key in filtered_motifs_on_length_keys:
+                    # Score mutation with MotifLocator with settings provided in FilterMotifsOnLength() object.
+                    motiflocator_delta_scores.update(
+                        motiflocator.calculate_motiflocator_delta_scores(
+                            fasta_string=vcf_mut.make_fasta_for_wt_and_mut(
+                                bp_upstream=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].bp_upstream,
+                                bp_downstream=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].bp_downstream
+                            ),
+                            matrix_filename=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].matrix_fh.name
+                        )
+                    )
 
                 # Count the number of input mutations that are associated with genes and that pass the MotifLocator
                 # threshold.

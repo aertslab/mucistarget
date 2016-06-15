@@ -238,7 +238,7 @@ class MotifsInfo:
             return MotifsInfo.motif_id_to_pwm_dict[motif_id] + '\n'
 
     @staticmethod
-    def get_pwms(motif_ids, min_motif_length=None, max_motif_length=None, header=False):
+    def get_pwms(motif_ids, min_motif_length=None, max_motif_length=None, header=True):
         """
         Get PWMs in INCLUSive format for a list of motifs.
 
@@ -249,12 +249,21 @@ class MotifsInfo:
         :param max_motif_length: Only include PWMs which have a maximum motif length of max_motif_length
                                  or do not use this restriction if this parameter is set to None.
         :param header: Add "#INCLUSive Motif Model" header line (True) or not (False).
-        :return: string with PWMs in INCLUSive format for motif IDs.
+        :return: string with PWMs in INCLUSive format for motif IDs,
+                 list of motif IDs that passed the filtering,
+                 are there motif IDs that passed the filtering (True or False)
         """
 
         if not motif_ids:
             # Set motif_ids to sorted list of all motifs if motifs_ids is None.
             motif_ids = sorted(MotifsInfo.motif_id_to_filename_dict)
+
+        selected_motif_ids = [
+            motif_id
+            for motif_id in motif_ids
+            if (min_motif_length is None or MotifsInfo.get_motif_length(motif_id) >= min_motif_length) and
+               (max_motif_length is None or MotifsInfo.get_motif_length(motif_id) <= max_motif_length)
+        ]
 
         if header:
             pwms = '#INCLUSive Motif Model\n\n'
@@ -262,12 +271,13 @@ class MotifsInfo:
             pwms = ''
 
         pwms += ''.join([MotifsInfo.get_pwm(motif_id)
-                         for motif_id in motif_ids
-                         if (min_motif_length is None or MotifsInfo.get_motif_length(motif_id) >= min_motif_length) and
-                            (max_motif_length is None or MotifsInfo.get_motif_length(motif_id) <= max_motif_length)
-                         ])
+                         for motif_id in selected_motif_ids])
 
-        return pwms
+        # Return:
+        #   - string with PWMs in INCLUSive format.
+        #   - list of motif IDs that passed the filtering step.
+        #   - are there motif IDs that passed the filtering (True or False).
+        return pwms, selected_motif_ids, True if len(selected_motif_ids) else False
 
     @staticmethod
     def write_motif_id_and_name_to_tfs_annotation_filename(motif_id_and_name_to_tfs_annotation_filename,
@@ -337,6 +347,49 @@ class MotifsInfo:
                               MotifsInfo.motif_id_to_motif_name_dict[motif_id],
                               sep='\t',
                               file=fh)
+
+
+class FilterMotifsOnLength:
+    def __init__(self, motif_ids, bp_upstream=0, bp_downstream=0, min_motif_length=None, max_motif_length=None, header=True, matrix_fh=None):
+        """
+        Filter list of motif IDs based on their motif length.
+        Get PWMs in INCLUSive format for a list of motifs.
+
+        :param motif_ids: list of motif IDs.
+                          If set to None, all motif IDs in MotifsInfo.motif_id_to_filename_dict are used.
+        :param bp_upstream: Set number of base pairs upstream of a mutation start position.
+        :param bp_upstream: Set number of base pairs downstream of a mutation end position.
+        :param min_motif_length: Only include PWMs which have a minimum motif length of min_motif_length
+                                 or do not use this restriction if this parameter is set to None.
+        :param max_motif_length: Only include PWMs which have a maximum motif length of max_motif_length
+                                 or do not use this restriction if this parameter is set to None.
+        :param header: Add "#INCLUSive Motif Model" header line (True) or not (False).
+        :param matrix_fh: file handle to which the string with PMWs in INCLUSive format will be written.
+        :return:
+        """
+
+        self.pwms, self.motif_ids, self.has_motif_ids = MotifsInfo.get_pwms(
+            motif_ids=motif_ids,
+            min_motif_length=min_motif_length,
+            max_motif_length=max_motif_length,
+            header=header
+        )
+
+        self.bp_upstream = bp_upstream
+        self.bp_downstream = bp_downstream
+        self.min_motif_length = min_motif_length
+        self.max_motif_length = max_motif_length
+        self.header = header
+        self.matrix_fh = matrix_fh
+
+    def write_matrix_file(self):
+        """
+        Write PWMs in INCLUSive format to a file handle.
+
+        :return:
+        """
+        self.matrix_fh.write(self.pwms)
+        self.matrix_fh.flush()
 
 
 def main():
