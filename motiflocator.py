@@ -125,7 +125,7 @@ def calculate_motiflocator_delta_scores(fasta_string,
     )
 
     motiflocator_max_scores_wt_mut = dict()
-    prev_fasta_seq_id = None
+    fasta_seq_id_to_from_fasta_seq_id_output_dict = dict()
 
     with BytesIO(motiflocator_command_stdout_data) as gff_fh:
         for gff_line in gff_fh:
@@ -148,13 +148,16 @@ def calculate_motiflocator_delta_scores(fasta_string,
                 # Motif ID.
                 motif_id = motifsinfo.MotifsInfo.get_motif_id(motif_name)
 
-                if fasta_seq_id != prev_fasta_seq_id:
-                    # Extract info from the FASTA sequence ID constructed by VCFmut.make_fasta_for_wt_and_mut() only when
-                    # we see an new FASTA sequence ID.
-                    vcf_mut, bp_upstream, bp_downstream, is_wt = mutations.VCFmut.from_fasta_seq_id(fasta_seq_id)
+                if fasta_seq_id not in fasta_seq_id_to_from_fasta_seq_id_output_dict:
+                    # Extract info from the FASTA sequence ID constructed by VCFmut.make_fasta_for_wt_and_mut() only
+                    # when we see an new FASTA sequence ID.
+                    fasta_seq_id_to_from_fasta_seq_id_output_dict[fasta_seq_id] = \
+                        mutations.VCFmut.from_fasta_seq_id(fasta_seq_id)
 
-                    # Store current FASTA sequence ID for next iteration.
-                    prev_fasta_seq_id = fasta_seq_id
+                    (vcf_mut,
+                     bp_upstream,
+                     bp_downstream,
+                     is_wt) = fasta_seq_id_to_from_fasta_seq_id_output_dict[fasta_seq_id]
 
                 # Set initial values for wildtype and mutant MotifLocator score for each motif.
                 motiflocator_max_scores_wt_mut.setdefault(motif_id, [0.0, 0.0])
