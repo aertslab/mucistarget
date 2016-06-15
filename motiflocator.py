@@ -51,7 +51,7 @@ class MotifLocatorDeltaScore:
 
         self.wt_score = wt_score
         self.mut_score = mut_score
-        self.delta_score = wt_score - mut_score
+        self.delta_score = mut_score - wt_score
 
     def __repr__(self):
         return '<MotifLocatorDeltaScore>\n' \
@@ -73,7 +73,7 @@ class MotifLocatorDeltaScore:
 
         :return: True or False
         """
-        return ((- self.delta_score) >= min_delta_threshold
+        return (self.delta_score >= min_delta_threshold
                 if self.mut_score >= min_mut_score_threshold
                 else False)
 
@@ -89,7 +89,7 @@ class MotifLocatorDeltaScore:
 
         :return: True or False
         """
-        return (self.delta_score >= min_delta_threshold
+        return ((- self.delta_score) >= min_delta_threshold
                 if self.wt_score >= min_wt_score_threshold
                 else False)
 
