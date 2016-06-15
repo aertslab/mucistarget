@@ -26,10 +26,12 @@ def read_genes_filename(genes_filename):
 
     with open(genes_filename, 'r') as fh:
         for gene_line in fh:
-            if gene_line.startswith('#'):
+            gene = gene_line.rstrip(' \r\n')
+
+            if gene == '' or gene.startswith('#'):
                 continue
 
-            genes_set.add(gene_line.rstrip('\r\n'))
+            genes_set.add(gene)
 
     return genes_set
 
