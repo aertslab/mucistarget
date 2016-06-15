@@ -36,6 +36,28 @@ def read_genes_filename(genes_filename):
     return genes_set
 
 
+def read_motif_ids_filename(motif_ids_filename):
+    """
+    Read motif IDs from a file and store them in a set.
+
+    :param motif_ids_filename: File with motif IDs.
+    :return: motif_ids_set
+    """
+
+    motif_ids_set = set()
+
+    with open(motif_ids_filename, 'r') as fh:
+        for motif_id_line in fh:
+            motif_id = motif_id_line.rstrip(' \r\n')
+
+            if motif_id == '' or motif_id.startswith('#'):
+                continue
+
+            motif_ids_set.add(motif_id)
+
+    return motif_ids_set
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Calculate the impact of mutations on the removal or introduction of TF binding sites.'
@@ -74,6 +96,13 @@ def main():
                         required=True,
                         help='Filename with gene names to use as input.'
                         )
+    parser.add_argument('--motifs',
+                        dest='motif_ids_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        help='Filename with motif IDs to score. If not specified, scores with all motifs.'
+                        )
     parser.add_argument('--output',
                         dest='output_filename',
                         action='store',
@@ -107,6 +136,12 @@ def main():
     print('Read gene list from "{0:s}" ...\n'.format(args.genes_filename), file=sys.stderr)
     genes_set = read_genes_filename(args.genes_filename)
 
+    if args.motif_ids_filename:
+        print('Read motif IDs from "{0:s}" ...\n'.format(args.motif_ids_filename), file=sys.stderr)
+        motif_ids_set = read_motif_ids_filename(args.motif_ids_filename)
+    else:
+        motif_ids_set = None
+
     print('Score mutations with MotifLocator ...\n', file=sys.stderr)
 
     with tempfile.NamedTemporaryFile() as matrix_max_motif_size_15_fh, \
@@ -117,7 +152,7 @@ def main():
         # Write temporary file with PWMs in INCLUSive format which length is smaller than or equal to 15.
         matrix_max_motif_size_15_fh.write(
             motifsinfo.MotifsInfo.get_pwms(
-                motif_ids=None,
+                motif_ids=motif_ids_set,
                 min_motif_length=None,
                 max_motif_length=15,
                 header=True
@@ -128,7 +163,7 @@ def main():
         # Write temporary file with PWMs in INCLUSive format which length is greater than 15 and smaller than or equal to 25.
         matrix_min_motif_size_16_max_motif_size_25_fh.write(
             motifsinfo.MotifsInfo.get_pwms(
-                motif_ids=None,
+                motif_ids=motif_ids_set,
                 min_motif_length=16,
                 max_motif_length=25,
                 header=True
@@ -139,7 +174,7 @@ def main():
         # Write temporary file with PWMs in INCLUSive format which length is greater than 25.
         matrix_min_motif_size_26_fh.write(
             motifsinfo.MotifsInfo.get_pwms(
-                motif_ids=None,
+                motif_ids=motif_ids_set,
                 min_motif_length=26,
                 max_motif_length=None,
                 header=True
