@@ -160,10 +160,22 @@ def main():
               sep='\t',
               file=output_fh)
 
+        mutations_stats = {
+            'nbr_of_input_mutations': 0,
+            'nbr_of_mutations_associated_with_genes': 0,
+            'nbr_of_mutations_which_pass_motiflocator_threshold': 0,
+        }
+
         for vcf_mut in vcf_mut_iterator:
+            # Count the number of input mutations.
+            mutations_stats['nbr_of_input_mutations'] += 1
+
             associated_genes_set = vcf_mut.get_associated_genes()
 
             if not associated_genes_set.isdisjoint(genes_set):
+                # Count the number of input mutations that are associated with genes.
+                mutations_stats['nbr_of_mutations_associated_with_genes'] += 1
+
                 # Only consider mutations which have associated genes which appear in our input set.
                 print('Scoring mutation "{0:s}" with MotifLocator: '.format(vcf_mut.mut_id),
                       end='',
@@ -195,6 +207,12 @@ def main():
                 motiflocator_delta_scores.update(motiflocator_delta_scores_min_motif_size_16_max_motif_size_25)
                 motiflocator_delta_scores.update(motiflocator_delta_scores_min_motif_size_26)
 
+                # Count the number of input mutations that are associated with genes and that pass the MotifLocator
+                # threshold.
+                mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold'] += (
+                    1 if len(motiflocator_delta_scores) != 0 else 0
+                )
+
                 # Write to the output file.
                 for motif_id, motiflocator_delta in motiflocator_delta_scores.iteritems():
                     print(vcf_mut,
@@ -215,6 +233,18 @@ def main():
                       file=sys.stderr)
 
                 output_fh.flush()
+
+        # Print some statistics about the number of mutations.
+        print(
+            '\nNumber of mutations in input file: {0:d}'.format(
+                mutations_stats['nbr_of_input_mutations']),
+            'Number of mutations associated with genes: {0:d}'.format(
+                mutations_stats['nbr_of_mutations_associated_with_genes']),
+            'Number of mutations which pass MotifLocator threshold: {0:d}'.format(
+                mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold']),
+            sep='\n',
+            file=sys.stderr
+        )
 
 
 if __name__ == "__main__":
