@@ -152,15 +152,15 @@ def main():
     import mutations
 
     if args.vcf_filename:
-        print('Using mutation filename: "{0:s}"'.format(args.vcf_filename), file=sys.stderr)
+        print('Using mutation filename: "{0:s}"\n'.format(args.vcf_filename), file=sys.stderr)
 
         vcf_mut_iterator = mutations.VCFmut.from_vcf_file(args.vcf_filename)
     elif args.mut_ids_filename:
-        print('Using mutation filename: "{0:s}"'.format(args.mut_ids_filename), file=sys.stderr)
+        print('Using mutation filename: "{0:s}"\n'.format(args.mut_ids_filename), file=sys.stderr)
 
         vcf_mut_iterator = mutations.VCFmut.from_mut_ids_file(args.mut_ids_filename)
     elif args.bedlike_mut_ids_filename:
-        print('Using mutation filename: "{0:s}"'.format(args.bedlike_mut_ids_filename), file=sys.stderr)
+        print('Using mutation filename: "{0:s}"\n'.format(args.bedlike_mut_ids_filename), file=sys.stderr)
 
         vcf_mut_iterator = mutations.VCFmut.from_bedlike_mut_ids_file(args.bedlike_mut_ids_filename)
 
@@ -282,7 +282,7 @@ def main():
                 mutations_stats['nbr_of_mutations_associated_with_genes'] += 1
 
                 # Only consider mutations which have associated genes which appear in our input set.
-                print('Scoring mutation "{0:s}" with MotifLocator: '.format(vcf_mut.mut_id),
+                print('  Scoring mutation "{0:s}" with MotifLocator: '.format(vcf_mut.mut_id),
                       end='',
                       file=sys.stderr)
 
@@ -341,7 +341,7 @@ def main():
                 mutations_stats['nbr_of_mutations_associated_with_genes']),
             'Number of mutations which pass MotifLocator threshold: {0:d}'.format(
                 mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold']),
-            'Number of motifs used for scoring: {0:d}'.format(len(motif_ids_set)),
+            'Number of motifs used for scoring: {0:d}\n'.format(len(motif_ids_set)),
             sep='\n',
             file=sys.stderr
         )
