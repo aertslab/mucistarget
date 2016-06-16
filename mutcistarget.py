@@ -210,7 +210,8 @@ def main():
               'reference',
               'mutation',
               'mutation ID',
-              'associated genes',
+              'associated gene',
+              'distance to TSS',
               'motif ID',
               'motif name',
               'directly annotated TFs',
@@ -230,9 +231,9 @@ def main():
             # Count the number of input mutations.
             mutations_stats['nbr_of_input_mutations'] += 1
 
-            associated_genes_set = vcf_mut.get_associated_genes()
+            associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
 
-            if not associated_genes_set.isdisjoint(genes_set):
+            if not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
                 # Count the number of input mutations that are associated with genes.
                 mutations_stats['nbr_of_mutations_associated_with_genes'] += 1
 
@@ -265,18 +266,20 @@ def main():
 
                 # Write to the output file.
                 for motif_id, motiflocator_delta in motiflocator_delta_scores.iteritems():
-                    print(vcf_mut,
-                          ';'.join(associated_genes_set),
-                          '\t'.join([motif_id,
-                                     motifsinfo.MotifsInfo.get_motif_name(motif_id),
-                                     ';'.join(motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)),
-                                     str(motiflocator_delta.wt_score),
-                                     str(motiflocator_delta.mut_score),
-                                     str(motiflocator_delta.delta_score)
-                                     ]
-                                    ),
-                          sep='\t',
-                          file=output_fh)
+                    for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
+                        print(vcf_mut,
+                              associated_gene,
+                              '{0:+}'.format(distance_to_tss),
+                              '\t'.join([motif_id,
+                                         motifsinfo.MotifsInfo.get_motif_name(motif_id),
+                                         ';'.join(motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)),
+                                         str(motiflocator_delta.wt_score),
+                                         str(motiflocator_delta.mut_score),
+                                         str(motiflocator_delta.delta_score)
+                                         ]
+                                        ),
+                              sep='\t',
+                              file=output_fh)
 
                 motiflocators_end_time = time.time()
                 print('{0:f} seconds.'.format(motiflocators_end_time - motiflocators_start_time),

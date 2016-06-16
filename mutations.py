@@ -64,11 +64,11 @@ class VCFmut:
         chrom_sizes=create_regulatory_domains.ChromSizes()
     )
 
-    # Store start and end position of each regulatory domain in a per chromosome numpy array.
-    reg_doms_start_end_array_per_chrom = {
+    # Store start and end position, tss and strand of each regulatory domain in a per chromosome numpy array.
+    reg_doms_start_end_tss_strand_array_per_chrom = {
         chrom: numpy.array(
             [
-                [reg_dom.chrom_start, reg_dom.chrom_end]
+                [reg_dom.chrom_start, reg_dom.chrom_end, reg_dom.tss, 1 if reg_dom.strand == '+' else -1]
                 for reg_dom in reg_doms
             ]
         )
@@ -438,28 +438,46 @@ class VCFmut:
         """
         return self.chrom, self.start - 1, self.start, self.mut_id
 
-    def get_associated_genes(self):
+    def get_associated_genes_and_distance_to_tss(self):
         """
-        Get gene names which regulatory domains contain the mutation.
+        Get gene names which regulatory domains contain the mutation and the distance of the mutation to the TSS.
 
-        :return: gene names which regulatory domains contain the mutation.
+        :return: dictionary of gene names as keys and distance to the TSS as values.
         """
 
-        # Get associated genes for a mutation by getting all gene names located on the same chromosome on which the
-        # mutation is located ( = VCFmut.reg_doms_genes_array_per_chrom[self.chrom] ) for which the regulatory domain
-        # of each of those genes meets the following conditions:
+        # Create a boolean array for the regulatory regions located on the same chromosome as on which the mutation is
+        # located ( = VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom] ) and for which which their
+        # interval contains the mutation start position:
         #   - The start position of the regulatory domain of a gene
-        #     ( = VCFmut.reg_doms_start_end_array_per_chrom[self.chrom][:, 0] )
+        #     ( = VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][:, 0] )
         #     is lower than or equal to the mutation position.
-        #  - The end position of the regulatory domain of a gene
-        #     ( = VCFmut.reg_doms_start_end_array_per_chrom[self.chrom][:, 1] )
+        #   - The end position of the regulatory domain of a gene
+        #     ( = VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][:, 1] )
         #     is greater than or equal to the mutation position.
-        return set(
-            VCFmut.reg_doms_genes_array_per_chrom[self.chrom][
-                (VCFmut.reg_doms_start_end_array_per_chrom[self.chrom][:, 0] <= self.start)
-                &
-                (VCFmut.reg_doms_start_end_array_per_chrom[self.chrom][:, 1] >= self.start)
-            ].tolist()
+
+        mutation_overlapping_with_reg_doms_array = (
+            (VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][:, 0] <= self.start)
+            &
+            (VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][:, 1] >= self.start)
+        )
+
+        # Return a dictionary with:
+        #   - Keys: All associated genes.
+        #   - Values:
+        #       Calculate distance of mutation to TSS of the associated genes:
+        #         = (mutation_start_position - tss) * strand
+        #       Where:
+        #         - mutation_start_position: self.start
+        #         - tss: VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 2]
+        #         - strand: VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 3]
+        return dict(
+            zip(
+                VCFmut.reg_doms_genes_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array].tolist(),
+                ((self.start
+                  - VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 2])
+                  * VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 3]
+                 ).tolist()
+            )
         )
 
     def get_reference_sequence_at_vcfmut(self):
