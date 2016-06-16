@@ -58,6 +58,28 @@ def read_motif_ids_filename(motif_ids_filename):
     return motif_ids_set
 
 
+def read_tfs_filename(tfs_filename):
+    """
+    Read TFs from a file and store them in a set.
+
+    :param tfs_filename: File with TFs.
+    :return: tfs_set
+    """
+
+    tfs_set = set()
+
+    with open(tfs_filename, 'r') as fh:
+        for tf_line in fh:
+            tf = tf_line.rstrip(' \r\n')
+
+            if tf == '' or tf.startswith('#'):
+                continue
+
+            tfs_set.add(tf)
+
+    return tfs_set
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Calculate the impact of mutations on the removal or introduction of TF binding sites.'
@@ -101,7 +123,16 @@ def main():
                         action='store',
                         type=str,
                         required=False,
-                        help='Filename with motif IDs to score. If not specified, scores with all motifs.'
+                        help='Filename with motif IDs to score. If not specified and --tfs is also not specified, '
+                             'scores with all motifs.'
+                        )
+    parser.add_argument('--tfs',
+                        dest='tfs_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        help='Filename with TFs for which directly annotated motif IDs will be scored. If not '
+                             'specified and --motifs is also not specified, scores with all motifs.'
                         )
     parser.add_argument('--output',
                         dest='output_filename',
@@ -136,11 +167,21 @@ def main():
     print('Read gene list from "{0:s}" ...\n'.format(args.genes_filename), file=sys.stderr)
     genes_set = read_genes_filename(args.genes_filename)
 
+    motif_ids_set = set()
+
     if args.motif_ids_filename:
         print('Read motif IDs from "{0:s}" ...\n'.format(args.motif_ids_filename), file=sys.stderr)
-        motif_ids_set = read_motif_ids_filename(args.motif_ids_filename)
-    else:
-        motif_ids_set = None
+        motif_ids_set.update(read_motif_ids_filename(args.motif_ids_filename))
+    if args.tfs_filename:
+        print('Read TFs from "{0:s}" ...\n'.format(args.tfs_filename), file=sys.stderr)
+        tfs_set = read_tfs_filename(args.tfs_filename)
+
+        # Add all motif IDs which are directly annotated for a TF.
+        [motif_ids_set.update(motifsinfo.MotifsInfo.get_motifs_for_tf(tf)) for tf in tfs_set]
+
+    if not args.motif_ids_filename and not args.tfs_filename:
+        # Use all motif IDs if --motifs and --tfs are not specified.
+        motif_ids_set = set(motifsinfo.MotifsInfo.motif_id_to_filename_dict)
 
     print('Score mutations with MotifLocator ...\n', file=sys.stderr)
 
@@ -300,6 +341,7 @@ def main():
                 mutations_stats['nbr_of_mutations_associated_with_genes']),
             'Number of mutations which pass MotifLocator threshold: {0:d}'.format(
                 mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold']),
+            'Number of motifs used for scoring: {0:d}'.format(len(motif_ids_set)),
             sep='\n',
             file=sys.stderr
         )
