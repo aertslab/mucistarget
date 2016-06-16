@@ -209,6 +209,7 @@ def main():
               'start',
               'reference',
               'mutation',
+              'mutation type',
               'mutation ID',
               'associated gene',
               'distance to TSS',
@@ -218,6 +219,8 @@ def main():
               'wildtype MotifLocator score',
               'mutant MotifLocator score',
               'delta MotifLocator score',
+              'wildtype consensus sequence',
+              'mutant consensus sequence',
               sep='\t',
               file=output_fh)
 
@@ -275,7 +278,9 @@ def main():
                                          ';'.join(motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)),
                                          str(motiflocator_delta.wt_score),
                                          str(motiflocator_delta.mut_score),
-                                         str(motiflocator_delta.delta_score)
+                                         str(motiflocator_delta.delta_score),
+                                         motiflocator_delta.wt_consensus,
+                                         motiflocator_delta.mut_consensus,
                                          ]
                                         ),
                               sep='\t',
