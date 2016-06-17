@@ -134,12 +134,12 @@ def main():
                         help='Filename with TFs for which directly annotated motif IDs will be scored. If not '
                              'specified and --motifs is also not specified, scores with all motifs.'
                         )
-    parser.add_argument('--output',
-                        dest='output_filename',
+    parser.add_argument('--motiflocator',
+                        dest='motiflocator_output_filename',
                         action='store',
                         type=str,
                         required=True,
-                        help='Filename to which the output will be written.'
+                        help='Filename to which the MotifLocator delta score output will be written.'
                         )
 
     args = parser.parse_args()
@@ -188,7 +188,7 @@ def main():
     with tempfile.NamedTemporaryFile() as matrix_max_motif_size_15_fh, \
             tempfile.NamedTemporaryFile() as matrix_min_motif_size_16_max_motif_size_25_fh, \
             tempfile.NamedTemporaryFile() as matrix_min_motif_size_26_fh, \
-            open(args.output_filename, 'w') as output_fh:
+            open(args.motiflocator_output_filename, 'w') as motiflocator_output_fh:
 
         filtered_motifs_on_length_dict = dict()
 
@@ -263,7 +263,7 @@ def main():
               'wildtype consensus sequence',
               'mutant consensus sequence',
               sep='\t',
-              file=output_fh)
+              file=motiflocator_output_fh)
 
         mutations_stats = {
             'nbr_of_input_mutations': 0,
@@ -325,13 +325,13 @@ def main():
                                          ]
                                         ),
                               sep='\t',
-                              file=output_fh)
+                              file=motiflocator_output_fh)
 
                 motiflocators_end_time = time.time()
                 print('{0:f} seconds.'.format(motiflocators_end_time - motiflocators_start_time),
                       file=sys.stderr)
 
-                output_fh.flush()
+                motiflocator_output_fh.flush()
 
         # Print some statistics about the number of mutations.
         print(
