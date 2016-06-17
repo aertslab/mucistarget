@@ -160,152 +160,36 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
                       file=mut_to_associated_genes_fh)
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description='Calculate the impact of mutations on the removal or introduction of TF binding sites.'
-    )
+def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+                                                  motif_ids_set,
+                                                  motiflocator_output_filename):
+    """
+    Calculate the MotifLocator scores for the wildtype and mutant FASTA sequence for each mutation and for each motif
+    and write the result to a file.
 
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--vcf',
-                       dest='vcf_filename',
-                       action='store',
-                       type=str,
-                       required=False,
-                       help='VCF file with mutations (column 1, 2, 3 and 5 are used).')
-    group.add_argument('--mut-ids',
-                       dest='mut_ids_filename',
-                       action='store',
-                       type=str,
-                       required=False,
-                       help='File with mutation IDs: '
-                            'chr10__100038800__TTTTTG__T__DEL '
-                            'chr10__10011659__A__AAT__INS '
-                            'chr10__100061062__C__T__SNV')
-    group.add_argument('--bedlike-mut-ids',
-                       dest='bedlike_mut_ids_filename',
-                       action='store',
-                       type=str,
-                       required=False,
-                       help='File with BED-like mutation IDs: '
-                            'chr10_100038800_100038801_TTTTG_-----_DEL '
-                            'chr10_10011659_10011660_--_AT_INS '
-                            'chr10_100142677_100142678_T_-_INDEL '
-                            'chr10_100061061_100061062_C_T_SNP')
-    parser.add_argument('--genes',
-                        dest='genes_filename',
-                        action='store',
-                        type=str,
-                        required=True,
-                        help='Filename with gene names to use as input.'
-                        )
-    parser.add_argument('--motifs',
-                        dest='motif_ids_filename',
-                        action='store',
-                        type=str,
-                        required=False,
-                        help='Filename with motif IDs to score. If not specified and --tfs is also not specified, '
-                             'scores with all motifs.'
-                        )
-    parser.add_argument('--tfs',
-                        dest='tfs_filename',
-                        action='store',
-                        type=str,
-                        required=False,
-                        help='Filename with TFs for which directly annotated motif IDs will be scored. If not '
-                             'specified and --motifs is also not specified, scores with all motifs.'
-                        )
-    parser.add_argument('--motiflocator',
-                        dest='motiflocator_output_filename',
-                        action='store',
-                        type=str,
-                        required=True,
-                        help='Filename to which the MotifLocator delta score output will be written.'
-                        )
-    parser.add_argument('--mut2genes',
-                        dest='mut_to_associated_genes_output_filename',
-                        action='store',
-                        type=str,
-                        required=False,
-                        help='TSV output file with mutation info and associated gene name and distance of mutation to '
-                             'TSS.'
-                        )
-
-    args = parser.parse_args()
-
-    print('\nImport motiflocator ...', file=sys.stderr)
-    import motiflocator
-    print('Import motifsinfo ...', file=sys.stderr)
-    import motifsinfo
-    print('Import mutations ...\n', file=sys.stderr)
-    import mutations
-
-    if args.vcf_filename:
-        print('Using mutation filename: "{0:s}"\n'.format(args.vcf_filename), file=sys.stderr)
-
-        vcf_mut_iterator = mutations.VCFmut.from_vcf_file(args.vcf_filename)
-    elif args.mut_ids_filename:
-        print('Using mutation filename: "{0:s}"\n'.format(args.mut_ids_filename), file=sys.stderr)
-
-        vcf_mut_iterator = mutations.VCFmut.from_mut_ids_file(args.mut_ids_filename)
-    elif args.bedlike_mut_ids_filename:
-        print('Using mutation filename: "{0:s}"\n'.format(args.bedlike_mut_ids_filename), file=sys.stderr)
-
-        vcf_mut_iterator = mutations.VCFmut.from_bedlike_mut_ids_file(args.bedlike_mut_ids_filename)
-
-    print('Read gene list from "{0:s}" ...\n'.format(args.genes_filename), file=sys.stderr)
-    genes_set = read_genes_filename(args.genes_filename)
-
-    motif_ids_set = set()
-
-    if args.motif_ids_filename:
-        print('Read motif IDs from "{0:s}" ...\n'.format(args.motif_ids_filename), file=sys.stderr)
-        motif_ids_set.update(read_motif_ids_filename(args.motif_ids_filename))
-    if args.tfs_filename:
-        print('Read TFs from "{0:s}" ...\n'.format(args.tfs_filename), file=sys.stderr)
-        tfs_set = read_tfs_filename(args.tfs_filename)
-
-        # Add all motif IDs which are directly annotated for a TF.
-        [motif_ids_set.update(motifsinfo.MotifsInfo.get_motifs_for_tf(tf)) for tf in tfs_set]
-
-    if not args.motif_ids_filename and not args.tfs_filename:
-        # Use all motif IDs if --motifs and --tfs are not specified.
-        motif_ids_set = set(motifsinfo.MotifsInfo.motif_id_to_filename_dict)
-
-    mutations_stats = dict()
-
-    print('Get all mutations that overlap with the regulatory domains of the provided gene set: ',
-          end='',
-          file=sys.stderr)
-
-    mut_to_associated_genes_start_time = time.time()
-
-    (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
-     input_vcf_mut_ids
-     ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set)
-
-    mutations_stats['nbr_of_input_mutations'] = len(input_vcf_mut_ids)
-    mutations_stats['nbr_of_mutations_associated_with_genes'] = len(vcf_mut_to_associated_genes_and_distance_to_tss_dict)
-
-    mut_to_associated_genes_end_time = time.time()
-
-    print('{0:f} seconds.\n'.format(mut_to_associated_genes_end_time - mut_to_associated_genes_start_time),
-          file=sys.stderr)
-
-    if args.mut_to_associated_genes_output_filename:
-        # Write all mutations and their associated genes and distance of the mutation to the TSS to a file.
-        write_mut_to_associated_gene_output(
-            mut_to_associated_genes_output_filename=args.mut_to_associated_genes_output_filename,
-            vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict
-        )
+    :param vcf_mut_to_associated_genes_and_distance_to_tss_dict:
+        OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
+        mutation to the TSS as values.
+        This dictionary can be made with get_all_mutations_that_overlap_with_regdoms_of_genes.
+    :param motif_ids_set:
+        set of motif IDs
+    :param motiflocator_output_filename:
+        Output filename to which MotifLocator delta scores are written.
+    :return:
+        nbr_of_mutations_which_pass_motiflocator_threshold: number of mutation that pass the MotifLocator threshold.
+    """
 
     print('Score mutations with MotifLocator ...\n', file=sys.stderr)
 
-    mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold'] = 0
+    import motifsinfo
+    import motiflocator
+
+    nbr_of_mutations_which_pass_motiflocator_threshold = 0
 
     with tempfile.NamedTemporaryFile() as matrix_max_motif_size_15_fh, \
             tempfile.NamedTemporaryFile() as matrix_min_motif_size_16_max_motif_size_25_fh, \
             tempfile.NamedTemporaryFile() as matrix_min_motif_size_26_fh, \
-            open(args.motiflocator_output_filename, 'w') as motiflocator_output_fh:
+            open(motiflocator_output_filename, 'w') as motiflocator_output_fh:
 
         filtered_motifs_on_length_dict = dict()
 
@@ -382,61 +266,206 @@ def main():
               sep='\t',
               file=motiflocator_output_fh)
 
-        for vcf_mut in vcf_mut_iterator:
-            associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
+        for vcf_mut, associated_genes_and_distance_to_tss_dict in vcf_mut_to_associated_genes_and_distance_to_tss_dict.iteritems():
+            print('  Scoring mutation "{0:s}" with MotifLocator: '.format(vcf_mut.mut_id),
+                  end='',
+                  file=sys.stderr)
 
-            if not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
-                # Only consider mutations which have associated genes which appear in our input set.
-                print('  Scoring mutation "{0:s}" with MotifLocator: '.format(vcf_mut.mut_id),
-                      end='',
-                      file=sys.stderr)
+            motiflocators_start_time = time.time()
 
-                motiflocators_start_time = time.time()
+            motiflocator_delta_scores = dict()
 
-                motiflocator_delta_scores = dict()
-
-                for filtered_motifs_on_length_key in filtered_motifs_on_length_keys:
-                    # Score mutation with MotifLocator with settings provided in FilterMotifsOnLength() object.
-                    motiflocator_delta_scores.update(
-                        motiflocator.calculate_motiflocator_delta_scores(
-                            fasta_string=vcf_mut.make_fasta_for_wt_and_mut(
-                                bp_upstream=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].bp_upstream,
-                                bp_downstream=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].bp_downstream
-                            ),
-                            matrix_filename=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].matrix_fh.name
-                        )
+            for filtered_motifs_on_length_key in filtered_motifs_on_length_keys:
+                # Score mutation with MotifLocator with settings provided in FilterMotifsOnLength() object.
+                motiflocator_delta_scores.update(
+                    motiflocator.calculate_motiflocator_delta_scores(
+                        fasta_string=vcf_mut.make_fasta_for_wt_and_mut(
+                            bp_upstream=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].bp_upstream,
+                            bp_downstream=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].bp_downstream
+                        ),
+                        matrix_filename=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].matrix_fh.name
                     )
-
-                # Count the number of input mutations that are associated with genes and that pass the MotifLocator
-                # threshold.
-                mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold'] += (
-                    1 if len(motiflocator_delta_scores) != 0 else 0
                 )
 
-                # Write to the output file.
-                for motif_id, motiflocator_delta in motiflocator_delta_scores.iteritems():
-                    for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
-                        print(vcf_mut,
-                              associated_gene,
-                              '{0:+}'.format(distance_to_tss),
-                              '\t'.join([motif_id,
-                                         motifsinfo.MotifsInfo.get_motif_name(motif_id),
-                                         ';'.join(motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)),
-                                         str(motiflocator_delta.wt_score),
-                                         str(motiflocator_delta.mut_score),
-                                         str(motiflocator_delta.delta_score),
-                                         motiflocator_delta.wt_consensus,
-                                         motiflocator_delta.mut_consensus,
-                                         ]
-                                        ),
-                              sep='\t',
-                              file=motiflocator_output_fh)
+            # Count the number of input mutations that are associated with genes and that pass the MotifLocator
+            # threshold.
+            nbr_of_mutations_which_pass_motiflocator_threshold += (
+                1 if len(motiflocator_delta_scores) != 0 else 0
+            )
 
-                motiflocators_end_time = time.time()
-                print('{0:f} seconds.'.format(motiflocators_end_time - motiflocators_start_time),
-                      file=sys.stderr)
+            # Write to the output file.
+            for motif_id, motiflocator_delta in motiflocator_delta_scores.iteritems():
+                for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
+                    print(vcf_mut,
+                          associated_gene,
+                          '{0:+}'.format(distance_to_tss),
+                          '\t'.join([motif_id,
+                                     motifsinfo.MotifsInfo.get_motif_name(motif_id),
+                                     ';'.join(motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)),
+                                     str(motiflocator_delta.wt_score),
+                                     str(motiflocator_delta.mut_score),
+                                     str(motiflocator_delta.delta_score),
+                                     motiflocator_delta.wt_consensus,
+                                     motiflocator_delta.mut_consensus,
+                                     ]
+                                    ),
+                          sep='\t',
+                          file=motiflocator_output_fh)
 
-                motiflocator_output_fh.flush()
+            motiflocators_end_time = time.time()
+            print('{0:f} seconds.'.format(motiflocators_end_time - motiflocators_start_time),
+                  file=sys.stderr)
+
+            motiflocator_output_fh.flush()
+
+    return nbr_of_mutations_which_pass_motiflocator_threshold
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Calculate the impact of mutations on the removal or introduction of TF binding sites.'
+    )
+
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--vcf',
+                       dest='vcf_filename',
+                       action='store',
+                       type=str,
+                       required=False,
+                       help='VCF file with mutations (column 1, 2, 3 and 5 are used).')
+    group.add_argument('--mut-ids',
+                       dest='mut_ids_filename',
+                       action='store',
+                       type=str,
+                       required=False,
+                       help='File with mutation IDs: '
+                            'chr10__100038800__TTTTTG__T__DEL '
+                            'chr10__10011659__A__AAT__INS '
+                            'chr10__100061062__C__T__SNV')
+    group.add_argument('--bedlike-mut-ids',
+                       dest='bedlike_mut_ids_filename',
+                       action='store',
+                       type=str,
+                       required=False,
+                       help='File with BED-like mutation IDs: '
+                            'chr10_100038800_100038801_TTTTG_-----_DEL '
+                            'chr10_10011659_10011660_--_AT_INS '
+                            'chr10_100142677_100142678_T_-_INDEL '
+                            'chr10_100061061_100061062_C_T_SNP')
+    parser.add_argument('--genes',
+                        dest='genes_filename',
+                        action='store',
+                        type=str,
+                        required=True,
+                        help='Filename with gene names to use as input.'
+                        )
+    parser.add_argument('--motifs',
+                        dest='motif_ids_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        help='Filename with motif IDs to score. If not specified and --tfs is also not specified, '
+                             'scores with all motifs.'
+                        )
+    parser.add_argument('--tfs',
+                        dest='tfs_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        help='Filename with TFs for which directly annotated motif IDs will be scored. If not '
+                             'specified and --motifs is also not specified, scores with all motifs.'
+                        )
+    parser.add_argument('--motiflocator',
+                        dest='motiflocator_output_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        help='Filename to which the MotifLocator delta score output will be written.'
+                        )
+    parser.add_argument('--mut2genes',
+                        dest='mut_to_associated_genes_output_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        help='TSV output file with mutation info and associated gene name and distance of mutation to '
+                             'TSS.'
+                        )
+
+    args = parser.parse_args()
+
+    print('Import motifsinfo ...', file=sys.stderr)
+    import motifsinfo
+    print('Import mutations ...\n', file=sys.stderr)
+    import mutations
+
+    if args.vcf_filename:
+        print('Using mutation filename: "{0:s}"\n'.format(args.vcf_filename), file=sys.stderr)
+
+        vcf_mut_iterator = mutations.VCFmut.from_vcf_file(args.vcf_filename)
+    elif args.mut_ids_filename:
+        print('Using mutation filename: "{0:s}"\n'.format(args.mut_ids_filename), file=sys.stderr)
+
+        vcf_mut_iterator = mutations.VCFmut.from_mut_ids_file(args.mut_ids_filename)
+    elif args.bedlike_mut_ids_filename:
+        print('Using mutation filename: "{0:s}"\n'.format(args.bedlike_mut_ids_filename), file=sys.stderr)
+
+        vcf_mut_iterator = mutations.VCFmut.from_bedlike_mut_ids_file(args.bedlike_mut_ids_filename)
+
+    print('Read gene list from "{0:s}" ...\n'.format(args.genes_filename), file=sys.stderr)
+    genes_set = read_genes_filename(args.genes_filename)
+
+    motif_ids_set = set()
+
+    if args.motif_ids_filename:
+        print('Read motif IDs from "{0:s}" ...\n'.format(args.motif_ids_filename), file=sys.stderr)
+        motif_ids_set.update(read_motif_ids_filename(args.motif_ids_filename))
+    if args.tfs_filename:
+        print('Read TFs from "{0:s}" ...\n'.format(args.tfs_filename), file=sys.stderr)
+        tfs_set = read_tfs_filename(args.tfs_filename)
+
+        # Add all motif IDs which are directly annotated for a TF.
+        [motif_ids_set.update(motifsinfo.MotifsInfo.get_motifs_for_tf(tf)) for tf in tfs_set]
+
+    if not args.motif_ids_filename and not args.tfs_filename:
+        # Use all motif IDs if --motifs and --tfs are not specified.
+        motif_ids_set = set(motifsinfo.MotifsInfo.motif_id_to_filename_dict)
+
+    mutations_stats = dict()
+
+    print('Get all mutations that overlap with the regulatory domains of the provided gene set: ',
+          end='',
+          file=sys.stderr)
+
+    mut_to_associated_genes_start_time = time.time()
+
+    (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+     input_vcf_mut_ids
+     ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set)
+
+    mutations_stats['nbr_of_input_mutations'] = len(input_vcf_mut_ids)
+    mutations_stats['nbr_of_mutations_associated_with_genes'] = len(vcf_mut_to_associated_genes_and_distance_to_tss_dict)
+
+    mut_to_associated_genes_end_time = time.time()
+
+    print('{0:f} seconds.\n'.format(mut_to_associated_genes_end_time - mut_to_associated_genes_start_time),
+          file=sys.stderr)
+
+    if args.mut_to_associated_genes_output_filename:
+        # Write all mutations and their associated genes and distance of the mutation to the TSS to a file.
+        write_mut_to_associated_gene_output(
+            mut_to_associated_genes_output_filename=args.mut_to_associated_genes_output_filename,
+            vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict
+        )
+
+    if args.motiflocator_output_filename:
+        # Calculate the MotifLocator scores for the wildtype and mutant FASTA sequence for each mutation and for each
+        # motif and write the result to a file.
+        mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold'] = \
+            calculate_and_write_motiflocator_delta_scores(
+                vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+                motif_ids_set=motif_ids_set,
+                motiflocator_output_filename=args.motiflocator_output_filename
+        )
 
     # Print some statistics about the number of mutations.
     print(
