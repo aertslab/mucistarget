@@ -377,6 +377,17 @@ class VCFmut:
             self.mut_type
         )
 
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(tuple(sorted(self.__dict__.items())))
+
     def __str__(self):
         return '{0:s}\t{1:d}\t{2:s}\t{3:s}\t{4:s}\t{5:s}'.format(self.chrom,
                                                                  self.start,

@@ -108,14 +108,16 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
     vcf_mut_to_associated_genes_and_distance_to_tss_dict = OrderedDict()
 
     for vcf_mut in vcf_mut_iterator:
-        # Store all unique mutation IDs.
-        input_vcf_mut_ids.add(vcf_mut.mut_id)
+        if vcf_mut.mut_id not in input_vcf_mut_ids:
+            # Store all unique mutation IDs.
+            input_vcf_mut_ids.add(vcf_mut.mut_id)
 
-        associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
+            associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
 
-        if not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
-            # Store all mutations (VCFmut object) and associated genes information in a ordered dict.
-            vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut] = associated_genes_and_distance_to_tss_dict
+            if not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
+                # Store all mutations (VCFmut object) and associated genes information in a ordered dict.
+                vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut] \
+                    = associated_genes_and_distance_to_tss_dict
 
     return (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
             input_vcf_mut_ids)
@@ -381,15 +383,9 @@ def main():
               file=motiflocator_output_fh)
 
         for vcf_mut in vcf_mut_iterator:
-            # Count the number of input mutations.
-            mutations_stats['nbr_of_input_mutations'] += 1
-
             associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
 
             if not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
-                # Count the number of input mutations that are associated with genes.
-                mutations_stats['nbr_of_mutations_associated_with_genes'] += 1
-
                 # Only consider mutations which have associated genes which appear in our input set.
                 print('  Scoring mutation "{0:s}" with MotifLocator: '.format(vcf_mut.mut_id),
                       end='',
