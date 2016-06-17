@@ -147,7 +147,7 @@ def calculate_motiflocator_delta_scores(fasta_string,
                 score = float(columns[5])
 
                 # Get motif name and consensus sequence.
-                motif_name, tmp1, consensus = columns[8].split('"')[1:4]
+                motif_name, consensus = columns[8].split('"')[1:4:2]
 
                 # Motif ID.
                 motif_id = motifsinfo.MotifsInfo.get_motif_id(motif_name)

@@ -151,7 +151,7 @@ class VCFmut:
             return None
 
         try:
-            chrom, tmp1, start, ref, mut, mut_type = bedlike_mut_id.split('_')[0:6]
+            chrom, _, start, ref, mut, mut_type = bedlike_mut_id.split('_')[0:6]
         except ValueError:
             raise ValueError(
                 'BED-like mutation ID "{0:s}" is not valid.'.format(
