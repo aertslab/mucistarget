@@ -13,6 +13,8 @@ import sys
 import tempfile
 import time
 
+from collections import OrderedDict
+
 
 def read_genes_filename(genes_filename):
     """
@@ -80,6 +82,91 @@ def read_tfs_filename(tfs_filename):
     return tfs_set
 
 
+def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set):
+    """
+    Get all mutations that fall in a regulatory domain of one of the genes in the gene set.
+
+    :param vcf_mut_iterator:
+        Iterator that yields a VCFmut object:
+            - mutations.VCFmut.from_vcf_file()
+            - mutations.VCFmut.from_mut_ids_file()
+            - mutations.VCFmut.from_bedlike_mut_ids_file()
+    :param genes_set:
+        Gene set which regulatory domains will be used to only keep those mutations that fall in those domains.
+    :return:
+        (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+         nbr_of_input_mutations,
+         nbr_of_mutations_associated_with_genes)
+
+        Where vcf_mut_to_associated_genes_and_distance_to_tss_dict:
+            OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
+            mutation to the TSS as values.
+        Where nbr_of_input_mutations:
+            number of mutations in vcf_mut_iterator.
+        Where nbr_of_mutations_associated_with_genes:
+            number of mutations which have associated genes.
+    """
+
+    nbr_of_input_mutations = 0
+    nbr_of_mutations_associated_with_genes = 0
+
+    vcf_mut_to_associated_genes_and_distance_to_tss_dict = OrderedDict()
+
+    for vcf_mut in vcf_mut_iterator:
+        # Count the number of input mutations.
+        nbr_of_input_mutations += 1
+
+        associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
+
+        if not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
+            # Count the number of input mutations that are associated with genes.
+            nbr_of_mutations_associated_with_genes += 1
+
+            # Store all mutations (VCFmut object) and associated genes information in a ordered dict.
+            vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut] = associated_genes_and_distance_to_tss_dict
+
+    return (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+            nbr_of_input_mutations,
+            nbr_of_mutations_associated_with_genes)
+
+
+def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
+                                        vcf_mut_to_associated_genes_and_distance_to_tss_dict):
+    """
+    Write all mutations and their associated genes and distance of the mutation to the TSS to a file.
+
+    :param mut_to_associated_genes_output_filename:
+        Output filename which will contain mutation info and associated genes info.
+    :param vcf_mut_to_associated_genes_and_distance_to_tss_dict:
+        OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
+        mutation to the TSS as values.
+        This dictionary can be made with get_all_mutations_that_overlap_with_regdoms_of_genes.
+    :return:
+    """
+
+    with open(mut_to_associated_genes_output_filename, 'w') as mut_to_associated_genes_fh:
+        # Write header to the output file.
+        print('# chrom',
+              'start',
+              'reference',
+              'mutation',
+              'mutation type',
+              'mutation ID',
+              'associated gene',
+              'distance to TSS',
+              sep='\t',
+              file=mut_to_associated_genes_fh)
+
+        for vcf_mut, associated_genes_and_distance_to_tss_dict in vcf_mut_to_associated_genes_and_distance_to_tss_dict.iteritems():
+            # Write to the output file.
+            for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
+                print(vcf_mut,
+                      associated_gene,
+                      '{0:+}'.format(distance_to_tss),
+                      sep='\t',
+                      file=mut_to_associated_genes_fh)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Calculate the impact of mutations on the removal or introduction of TF binding sites.'
@@ -141,6 +228,14 @@ def main():
                         required=True,
                         help='Filename to which the MotifLocator delta score output will be written.'
                         )
+    parser.add_argument('--mut2genes',
+                        dest='mut_to_associated_genes_output_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        help='TSV output file with mutation info and associated gene name and distance of mutation to '
+                             'TSS.'
+                        )
 
     args = parser.parse_args()
 
@@ -183,7 +278,34 @@ def main():
         # Use all motif IDs if --motifs and --tfs are not specified.
         motif_ids_set = set(motifsinfo.MotifsInfo.motif_id_to_filename_dict)
 
+    mutations_stats = dict()
+
+    print('Get all mutations that overlap with the regulatory domains of the provided gene set: ',
+          end='',
+          file=sys.stderr)
+
+    mut_to_associated_genes_start_time = time.time()
+
+    (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+     mutations_stats['nbr_of_input_mutations'],
+     mutations_stats['nbr_of_mutations_associated_with_genes']
+     ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set)
+
+    mut_to_associated_genes_end_time = time.time()
+
+    print('{0:f} seconds.\n'.format(mut_to_associated_genes_end_time - mut_to_associated_genes_start_time),
+          file=sys.stderr)
+
+    if args.mut_to_associated_genes_output_filename:
+        # Write all mutations and their associated genes and distance of the mutation to the TSS to a file.
+        write_mut_to_associated_gene_output(
+            mut_to_associated_genes_output_filename=args.mut_to_associated_genes_output_filename,
+            vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict
+        )
+
     print('Score mutations with MotifLocator ...\n', file=sys.stderr)
+
+    mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold'] = 0
 
     with tempfile.NamedTemporaryFile() as matrix_max_motif_size_15_fh, \
             tempfile.NamedTemporaryFile() as matrix_min_motif_size_16_max_motif_size_25_fh, \
@@ -265,12 +387,6 @@ def main():
               sep='\t',
               file=motiflocator_output_fh)
 
-        mutations_stats = {
-            'nbr_of_input_mutations': 0,
-            'nbr_of_mutations_associated_with_genes': 0,
-            'nbr_of_mutations_which_pass_motiflocator_threshold': 0,
-        }
-
         for vcf_mut in vcf_mut_iterator:
             # Count the number of input mutations.
             mutations_stats['nbr_of_input_mutations'] += 1
@@ -333,18 +449,18 @@ def main():
 
                 motiflocator_output_fh.flush()
 
-        # Print some statistics about the number of mutations.
-        print(
-            '\nNumber of mutations in input file: {0:d}'.format(
-                mutations_stats['nbr_of_input_mutations']),
-            'Number of mutations associated with genes: {0:d}'.format(
-                mutations_stats['nbr_of_mutations_associated_with_genes']),
-            'Number of mutations which pass MotifLocator threshold: {0:d}'.format(
-                mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold']),
-            'Number of motifs used for scoring: {0:d}\n'.format(len(motif_ids_set)),
-            sep='\n',
-            file=sys.stderr
-        )
+    # Print some statistics about the number of mutations.
+    print(
+        '\nNumber of mutations in input file: {0:d}'.format(
+            mutations_stats['nbr_of_input_mutations']),
+        'Number of mutations associated with genes: {0:d}'.format(
+            mutations_stats['nbr_of_mutations_associated_with_genes']),
+        'Number of mutations which pass MotifLocator threshold: {0:d}'.format(
+            mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold']),
+        'Number of motifs used for scoring: {0:d}\n'.format(len(motif_ids_set)),
+        sep='\n',
+        file=sys.stderr
+    )
 
 
 if __name__ == "__main__":
