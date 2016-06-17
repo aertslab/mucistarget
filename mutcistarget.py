@@ -84,7 +84,7 @@ def read_tfs_filename(tfs_filename):
 
 def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set):
     """
-    Get all mutations that fall in a regulatory domain of one of the genes in the gene set.
+    Get all unique mutations that fall in a regulatory domain of one of the genes in the gene set.
 
     :param vcf_mut_iterator:
         Iterator that yields a VCFmut object:
@@ -95,39 +95,30 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
         Gene set which regulatory domains will be used to only keep those mutations that fall in those domains.
     :return:
         (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
-         nbr_of_input_mutations,
-         nbr_of_mutations_associated_with_genes)
+         input_vcf_mut_ids)
 
         Where vcf_mut_to_associated_genes_and_distance_to_tss_dict:
             OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
             mutation to the TSS as values.
-        Where nbr_of_input_mutations:
-            number of mutations in vcf_mut_iterator.
-        Where nbr_of_mutations_associated_with_genes:
-            number of mutations which have associated genes.
+        Where input_vcf_mut_ids:
+            unique mutation IDs in the vcf_mut_iterator.
     """
 
-    nbr_of_input_mutations = 0
-    nbr_of_mutations_associated_with_genes = 0
-
+    input_vcf_mut_ids = set()
     vcf_mut_to_associated_genes_and_distance_to_tss_dict = OrderedDict()
 
     for vcf_mut in vcf_mut_iterator:
-        # Count the number of input mutations.
-        nbr_of_input_mutations += 1
+        # Store all unique mutation IDs.
+        input_vcf_mut_ids.add(vcf_mut.mut_id)
 
         associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
 
         if not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
-            # Count the number of input mutations that are associated with genes.
-            nbr_of_mutations_associated_with_genes += 1
-
             # Store all mutations (VCFmut object) and associated genes information in a ordered dict.
             vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut] = associated_genes_and_distance_to_tss_dict
 
     return (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
-            nbr_of_input_mutations,
-            nbr_of_mutations_associated_with_genes)
+            input_vcf_mut_ids)
 
 
 def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
@@ -287,9 +278,11 @@ def main():
     mut_to_associated_genes_start_time = time.time()
 
     (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
-     mutations_stats['nbr_of_input_mutations'],
-     mutations_stats['nbr_of_mutations_associated_with_genes']
+     input_vcf_mut_ids
      ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set)
+
+    mutations_stats['nbr_of_input_mutations'] = len(input_vcf_mut_ids)
+    mutations_stats['nbr_of_mutations_associated_with_genes'] = len(vcf_mut_to_associated_genes_and_distance_to_tss_dict)
 
     mut_to_associated_genes_end_time = time.time()
 
