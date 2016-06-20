@@ -247,11 +247,20 @@ class VCFmut:
             chr10__10011659__A__AAT__INS__bp_up_10__bp_down_10__wt
             chr10__10011659__A__AAT__INS__bp_up_10__bp_down_10__mut
 
-        :param fasta_seq_id: FASTA sequence ID in the following format: chrom__start__ref__mut__mut_type__bp_up_X__bp_down_Y__mut_or_wt
-        :return: VCFmut object, bp_upstream, bp_downstream, is_wt
+        :param fasta_seq_id:
+            FASTA sequence ID in the following format: chrom__start__ref__mut__mut_type__bp_up_X__bp_down_Y__mut_or_wt
+        :return:
+            VCFmut object, bp_upstream, bp_downstream, is_wt
         """
 
-        chrom, start, ref, mut, mut_type, bp_upstream_str, bp_downstream_str, wt_or_mut_str = fasta_seq_id.split('__')[0:8]
+        (chrom,
+         start,
+         ref,
+         mut,
+         mut_type,
+         bp_upstream_str,
+         bp_downstream_str,
+         wt_or_mut_str) = fasta_seq_id.split('__')[0:8]
 
         if (not bp_upstream_str.startswith('bp_up_') or
                 not bp_downstream_str.startswith('bp_down_') or
@@ -353,11 +362,11 @@ class VCFmut:
 
         if ref_length == mut_length:
             if ref_length == 1:
-                # SNV: single nucleotide variant
+                # SNV: single nucleotide variant.
                 self.snv = True
                 self.mut_type = 'SNV'
             else:
-                # MNV: multi nucleotide variant (two or more SNVs in succession)
+                # MNV: multi nucleotide variant (two or more SNVs in succession).
                 self.mnv = True
                 self.mut_type = 'MNV'
         elif ref_length > mut_length:
@@ -417,7 +426,7 @@ class VCFmut:
     @property
     def is_mnv(self):
         """
-        Check if this mutation is a MNV (multi nucleotide variant: two or more SNVs in succession)
+        Check if this mutation is a MNV (multi nucleotide variant: two or more SNVs in succession).
 
         :return: True or False
         """
@@ -445,7 +454,7 @@ class VCFmut:
         """
         Generate a BED region for the mutation (length of regions is always 1 base pair).
 
-        :return: list with chromosome name, start position, end position and  mutation ID
+        :return: list with chromosome name, start position, end position and  mutation ID.
         """
         return self.chrom, self.start - 1, self.start, self.mut_id
 
