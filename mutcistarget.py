@@ -175,7 +175,8 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
 
 def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_dict,
                                                   motif_ids_set,
-                                                  motiflocator_output_filename):
+                                                  motiflocator_output_filename,
+                                                  log_fh=sys.stderr):
     """
     Calculate the MotifLocator scores for the wildtype and mutant FASTA sequence for each mutation and for each motif
     and write the result to a file.
@@ -188,11 +189,13 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
         set of motif IDs
     :param motiflocator_output_filename:
         Output filename to which MotifLocator delta scores are written.
+    :param log_fh:
+        File handle to which the progress information is written.
     :return:
         nbr_of_mutations_which_pass_motiflocator_threshold: number of mutation that pass the MotifLocator threshold.
     """
 
-    print('Score mutations with MotifLocator ...\n', file=sys.stderr)
+    print('Score mutations with MotifLocator ...\n', file=log_fh)
 
     import motifsinfo
     import motiflocator
@@ -282,7 +285,7 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
         for vcf_mut, associated_genes_and_distance_to_tss_dict in vcf_mut_to_associated_genes_and_distance_to_tss_dict.iteritems():
             print('  Scoring mutation "{0:s}" with MotifLocator: '.format(vcf_mut.mut_id),
                   end='',
-                  file=sys.stderr)
+                  file=log_fh)
 
             motiflocators_start_time = time.time()
 
@@ -327,7 +330,7 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
             motiflocators_end_time = time.time()
             print('{0:f} seconds.'.format(motiflocators_end_time - motiflocators_start_time),
-                  file=sys.stderr)
+                  file=log_fh)
 
             motiflocator_output_fh.flush()
 
@@ -403,24 +406,41 @@ def main():
                         help='TSV output file with mutation info and associated gene name and distance of mutation to '
                              'TSS.'
                         )
+    parser.add_argument('--log',
+                        dest='log_output_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        help='Write the progress and statistics to a log file instead of standard error.'
+                        )
 
     args = parser.parse_args()
 
-    print('Import motifsinfo ...', file=sys.stderr)
+    total_start_time = time.time()
+
+    if args.log_output_filename:
+        log_fh = open(args.log_output_filename, 'w', 1)
+    else:
+        log_fh = sys.stderr
+
+    print('\nCommandline:\n------------\n\n{0:s}\n\n'.format(' '.join(sys.argv)), file=log_fh)
+
+    print('mutCisTarget:\n-------------\n', file=log_fh)
+    print('Import motifsinfo ...', file=log_fh)
     import motifsinfo
-    print('Import mutations ...\n', file=sys.stderr)
+    print('Import mutations ...\n', file=log_fh)
     import mutations
 
     if args.vcf_filename:
-        print('Using mutation filename: "{0:s}"\n'.format(args.vcf_filename), file=sys.stderr)
+        print('Using mutation filename: "{0:s}"\n'.format(args.vcf_filename), file=log_fh)
 
         vcf_mut_iterator = mutations.VCFmut.from_vcf_file(args.vcf_filename)
     elif args.mut_ids_filename:
-        print('Using mutation filename: "{0:s}"\n'.format(args.mut_ids_filename), file=sys.stderr)
+        print('Using mutation filename: "{0:s}"\n'.format(args.mut_ids_filename), file=log_fh)
 
         vcf_mut_iterator = mutations.VCFmut.from_mut_ids_file(args.mut_ids_filename)
     elif args.bedlike_mut_ids_filename:
-        print('Using mutation filename: "{0:s}"\n'.format(args.bedlike_mut_ids_filename), file=sys.stderr)
+        print('Using mutation filename: "{0:s}"\n'.format(args.bedlike_mut_ids_filename), file=log_fh)
 
         vcf_mut_iterator = mutations.VCFmut.from_bedlike_mut_ids_file(args.bedlike_mut_ids_filename)
 
@@ -429,16 +449,16 @@ def main():
     genes_set = None
 
     if args.genes_filename:
-        print('Read gene list from "{0:s}" ...\n'.format(args.genes_filename), file=sys.stderr)
+        print('Read gene list from "{0:s}" ...\n'.format(args.genes_filename), file=log_fh)
         genes_set = read_genes_filename(args.genes_filename)
 
     motif_ids_set = set()
 
     if args.motif_ids_filename:
-        print('Read motif IDs from "{0:s}" ...\n'.format(args.motif_ids_filename), file=sys.stderr)
+        print('Read motif IDs from "{0:s}" ...\n'.format(args.motif_ids_filename), file=log_fh)
         motif_ids_set.update(read_motif_ids_filename(args.motif_ids_filename))
     if args.tfs_filename:
-        print('Read TFs from "{0:s}" ...\n'.format(args.tfs_filename), file=sys.stderr)
+        print('Read TFs from "{0:s}" ...\n'.format(args.tfs_filename), file=log_fh)
         tfs_set = read_tfs_filename(args.tfs_filename)
 
         tfs_with_directly_annotated_motifs_set = {tf for tf in tfs_set if tf in motifsinfo.MotifsInfo.tf_to_motifs_dict}
@@ -458,7 +478,7 @@ def main():
                                                                                          if args.genes_filename
                                                                                          else 'genes'),
           end='',
-          file=sys.stderr)
+          file=log_fh)
 
     mut_to_associated_genes_start_time = time.time()
 
@@ -474,7 +494,7 @@ def main():
     mut_to_associated_genes_end_time = time.time()
 
     print('{0:f} seconds.\n'.format(mut_to_associated_genes_end_time - mut_to_associated_genes_start_time),
-          file=sys.stderr)
+          file=log_fh)
 
     if args.mut_to_associated_genes_output_filename:
         # Write all mutations and their associated genes and distance of the mutation to the TSS to a file.
@@ -490,19 +510,27 @@ def main():
             calculate_and_write_motiflocator_delta_scores(
                 vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
                 motif_ids_set=motif_ids_set,
-                motiflocator_output_filename=args.motiflocator_output_filename
+                motiflocator_output_filename=args.motiflocator_output_filename,
+                log_fh=log_fh
         )
+
+    total_end_time = time.time()
+
+    print('\n\nTotal time: {0:f} seconds.\n'.format(total_end_time - total_start_time),
+          file=log_fh)
 
     # Print some statistics.
     print(
-        '\nNumber of mutations in input file:\t{0:d}'.format(
+        '\nStatistics:',
+        '-----------\n',
+        'Number of mutations in input file:\t{0:d}'.format(
             stats_dict['nbr_of_input_mutations']),
         'Number of mutations associated with genes:\t{0:d}'.format(
             stats_dict['nbr_of_mutations_associated_with_genes']),
         'Number of genes associated with mutations:\t{0:d}'.format(
             stats_dict['nbr_of_genes_associated_with_mutations']),
         sep='\n',
-        file=sys.stderr
+        file=log_fh
     )
 
     if args.motiflocator_output_filename:
@@ -510,13 +538,13 @@ def main():
             'Number of mutations which pass MotifLocator threshold:\t{0:d}'.format(
                 stats_dict['nbr_of_mutations_which_pass_motiflocator_threshold']),
             sep='\n',
-            file=sys.stderr
+            file=log_fh
         )
 
     print(
         'Number of motifs used for scoring: {0:d}'.format(len(motif_ids_set)),
         sep='\n',
-        file=sys.stderr
+        file=log_fh
     )
 
     if args.tfs_filename:
@@ -525,10 +553,12 @@ def main():
             'Number of input TFs with annotated motifs:\t{0:d}'.format(
                 stats_dict['nbr_of_input_tfs_with_directly_annotated_motifs']),
             sep='\n',
-            file=sys.stderr
+            file=log_fh
         )
 
-    print('', file=sys.stderr)
+    print('', file=log_fh)
+
+    log_fh.close()
 
 if __name__ == "__main__":
     main()
