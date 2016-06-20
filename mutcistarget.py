@@ -411,6 +411,8 @@ def main():
 
         vcf_mut_iterator = mutations.VCFmut.from_bedlike_mut_ids_file(args.bedlike_mut_ids_filename)
 
+    stats_dict = dict()
+
     print('Read gene list from "{0:s}" ...\n'.format(args.genes_filename), file=sys.stderr)
     genes_set = read_genes_filename(args.genes_filename)
 
@@ -423,14 +425,18 @@ def main():
         print('Read TFs from "{0:s}" ...\n'.format(args.tfs_filename), file=sys.stderr)
         tfs_set = read_tfs_filename(args.tfs_filename)
 
+        tfs_with_directly_annotated_motifs_set = {tf for tf in tfs_set if tf in motifsinfo.MotifsInfo.tf_to_motifs_dict}
+
+        stats_dict['nbr_of_input_tfs'] = len(tfs_set)
+        stats_dict['nbr_of_input_tfs_with_directly_annotated_motifs'] = len(tfs_with_directly_annotated_motifs_set)
+
         # Add all motif IDs which are directly annotated for a TF.
-        [motif_ids_set.update(motifsinfo.MotifsInfo.get_motifs_for_tf(tf)) for tf in tfs_set]
+        [motif_ids_set.update(motifsinfo.MotifsInfo.get_motifs_for_tf(tf))
+         for tf in tfs_with_directly_annotated_motifs_set]
 
     if not args.motif_ids_filename and not args.tfs_filename:
         # Use all motif IDs if --motifs and --tfs are not specified.
         motif_ids_set = set(motifsinfo.MotifsInfo.motif_id_to_filename_dict)
-
-    mutations_stats = dict()
 
     print('Get all mutations that overlap with the regulatory domains of the provided gene set: ',
           end='',
@@ -442,8 +448,8 @@ def main():
      input_vcf_mut_ids
      ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set)
 
-    mutations_stats['nbr_of_input_mutations'] = len(input_vcf_mut_ids)
-    mutations_stats['nbr_of_mutations_associated_with_genes'] = len(vcf_mut_to_associated_genes_and_distance_to_tss_dict)
+    stats_dict['nbr_of_input_mutations'] = len(input_vcf_mut_ids)
+    stats_dict['nbr_of_mutations_associated_with_genes'] = len(vcf_mut_to_associated_genes_and_distance_to_tss_dict)
 
     mut_to_associated_genes_end_time = time.time()
 
@@ -460,7 +466,7 @@ def main():
     if args.motiflocator_output_filename:
         # Calculate the MotifLocator scores for the wildtype and mutant FASTA sequence for each mutation and for each
         # motif and write the result to a file.
-        mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold'] = \
+        stats_dict['nbr_of_mutations_which_pass_motiflocator_threshold'] = \
             calculate_and_write_motiflocator_delta_scores(
                 vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
                 motif_ids_set=motif_ids_set,
@@ -470,9 +476,9 @@ def main():
     # Print some statistics about the number of mutations.
     print(
         '\nNumber of mutations in input file: {0:d}'.format(
-            mutations_stats['nbr_of_input_mutations']),
+            stats_dict['nbr_of_input_mutations']),
         'Number of mutations associated with genes: {0:d}'.format(
-            mutations_stats['nbr_of_mutations_associated_with_genes']),
+            stats_dict['nbr_of_mutations_associated_with_genes']),
         sep='\n',
         file=sys.stderr
     )
@@ -480,7 +486,7 @@ def main():
     if args.motiflocator_output_filename:
         print(
             'Number of mutations which pass MotifLocator threshold: {0:d}'.format(
-                mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold']),
+                stats_dict['nbr_of_mutations_which_pass_motiflocator_threshold']),
             sep='\n',
             file=sys.stderr
         )
@@ -490,6 +496,15 @@ def main():
         sep='\n',
         file=sys.stderr
     )
+
+    if args.tfs_filename:
+        print(
+            'Number of input TFs: {0:d}'.format(stats_dict['nbr_of_input_tfs']),
+            'Number of input TFs with annotated motifs: {0:d}'.format(
+                stats_dict['nbr_of_input_tfs_with_directly_annotated_motifs']),
+            sep='\n',
+            file=sys.stderr
+        )
 
 
 if __name__ == "__main__":
