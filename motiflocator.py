@@ -128,7 +128,7 @@ def calculate_motiflocator_delta_scores(fasta_string,
         stdin=fasta_string.encode('utf-8')
     )
 
-    motiflocator_max_scores_and_consencus_for_wt_mut = dict()
+    motiflocator_max_scores_and_consensus_for_wt_mut = dict()
     fasta_seq_id_to_from_fasta_seq_id_output_dict = dict()
 
     with BytesIO(motiflocator_command_stdout_data) as gff_fh:
@@ -164,7 +164,7 @@ def calculate_motiflocator_delta_scores(fasta_string,
                      is_wt) = fasta_seq_id_to_from_fasta_seq_id_output_dict[fasta_seq_id]
 
                 # Set initial values for wildtype and mutant MotifLocator score and consensus sequence for each motif.
-                motiflocator_max_scores_and_consencus_for_wt_mut.setdefault(motif_id, [[0.0, ''], [0.0, '']])
+                motiflocator_max_scores_and_consensus_for_wt_mut.setdefault(motif_id, [[0.0, ''], [0.0, '']])
 
                 # The lowest possible motif start position we care about is the same for both wildtype and mutant
                 # sequences and starts at that position where the last position of the motif overlaps with the first
@@ -188,10 +188,10 @@ def calculate_motiflocator_delta_scores(fasta_string,
 
                     if (motif_start_pos >= lowest_motif_start_pos_to_consider and
                                 motif_end_pos <= highest_motif_end_pos_to_consider):
-                        if motiflocator_max_scores_and_consencus_for_wt_mut[motif_id][0][0] < score:
+                        if motiflocator_max_scores_and_consensus_for_wt_mut[motif_id][0][0] < score:
                             # Update maximum MotifLocator score and consensus sequence for wildtype sequence for the
                             # current motif.
-                            motiflocator_max_scores_and_consencus_for_wt_mut[motif_id][0] = [score, consensus]
+                            motiflocator_max_scores_and_consensus_for_wt_mut[motif_id][0] = [score, consensus]
                 else:
                     # For mutated sequence.
 
@@ -206,14 +206,14 @@ def calculate_motiflocator_delta_scores(fasta_string,
 
                     if (motif_start_pos >= lowest_motif_start_pos_to_consider and
                                 motif_end_pos <= highest_motif_end_pos_to_consider):
-                        if motiflocator_max_scores_and_consencus_for_wt_mut[motif_id][1][0] < score:
+                        if motiflocator_max_scores_and_consensus_for_wt_mut[motif_id][1][0] < score:
                             # Update maximum MotifLocator score and consensus sequence for mutant sequence for the
                             # current motif.
-                            motiflocator_max_scores_and_consencus_for_wt_mut[motif_id][1] = [score, consensus]
+                            motiflocator_max_scores_and_consensus_for_wt_mut[motif_id][1] = [score, consensus]
 
     motiflocator_max_scores_wt_mut_delta_above_threshold = dict()
 
-    for motif_id, max_scores_and_consencus_for_wt_mut in motiflocator_max_scores_and_consencus_for_wt_mut.iteritems():
+    for motif_id, max_scores_and_consencus_for_wt_mut in motiflocator_max_scores_and_consensus_for_wt_mut.iteritems():
         if (max_scores_and_consencus_for_wt_mut[0][0] >= min_score_threshold
                 or max_scores_and_consencus_for_wt_mut[1][0] >= min_score_threshold):
             motiflocator_max_scores_wt_mut_delta_above_threshold[motif_id] = MotifLocatorDeltaScore(
