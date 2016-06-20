@@ -473,8 +473,19 @@ def main():
             mutations_stats['nbr_of_input_mutations']),
         'Number of mutations associated with genes: {0:d}'.format(
             mutations_stats['nbr_of_mutations_associated_with_genes']),
-        'Number of mutations which pass MotifLocator threshold: {0:d}'.format(
-            mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold']),
+        sep='\n',
+        file=sys.stderr
+    )
+
+    if args.motiflocator_output_filename:
+        print(
+            'Number of mutations which pass MotifLocator threshold: {0:d}'.format(
+                mutations_stats['nbr_of_mutations_which_pass_motiflocator_threshold']),
+            sep='\n',
+            file=sys.stderr
+        )
+
+    print(
         'Number of motifs used for scoring: {0:d}\n'.format(len(motif_ids_set)),
         sep='\n',
         file=sys.stderr
