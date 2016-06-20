@@ -96,17 +96,22 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
         If set to None, no filtering will be applied.
     :return:
         (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
-         input_vcf_mut_ids)
+         input_vcf_mut_ids,
+         associated_genes_set)
 
         Where vcf_mut_to_associated_genes_and_distance_to_tss_dict:
             OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
             mutation to the TSS as values.
         Where input_vcf_mut_ids:
             unique mutation IDs in the vcf_mut_iterator.
+        Where associated_genes_set:
+            unique gene names which are associated with at least one mutation of the input and which pass the input gene
+            set filter if specified.
     """
 
     input_vcf_mut_ids = set()
     vcf_mut_to_associated_genes_and_distance_to_tss_dict = OrderedDict()
+    associated_genes_set = set()
 
     for vcf_mut in vcf_mut_iterator:
         if vcf_mut.mut_id not in input_vcf_mut_ids:
@@ -123,8 +128,12 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
                 vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut] \
                     = associated_genes_and_distance_to_tss_dict
 
+                # Keep track of all associated genes for all mutations.
+                associated_genes_set.update(set(associated_genes_and_distance_to_tss_dict))
+
     return (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
-            input_vcf_mut_ids)
+            input_vcf_mut_ids,
+            associated_genes_set)
 
 
 def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
@@ -454,11 +463,13 @@ def main():
     mut_to_associated_genes_start_time = time.time()
 
     (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
-     input_vcf_mut_ids
+     input_vcf_mut_ids,
+     associated_genes_set
      ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set)
 
     stats_dict['nbr_of_input_mutations'] = len(input_vcf_mut_ids)
     stats_dict['nbr_of_mutations_associated_with_genes'] = len(vcf_mut_to_associated_genes_and_distance_to_tss_dict)
+    stats_dict['nbr_of_genes_associated_with_mutations'] = len(associated_genes_set)
 
     mut_to_associated_genes_end_time = time.time()
 
@@ -488,6 +499,8 @@ def main():
             stats_dict['nbr_of_input_mutations']),
         'Number of mutations associated with genes:\t{0:d}'.format(
             stats_dict['nbr_of_mutations_associated_with_genes']),
+        'Number of genes associated with mutations:\t{0:d}'.format(
+            stats_dict['nbr_of_genes_associated_with_mutations']),
         sep='\n',
         file=sys.stderr
     )
