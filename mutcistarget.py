@@ -92,7 +92,8 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
             - mutations.VCFmut.from_mut_ids_file()
             - mutations.VCFmut.from_bedlike_mut_ids_file()
     :param genes_set:
-        Gene set which regulatory domains will be used to only keep those mutations that fall in those domains.
+        Set of genes which regulatory domains will be used to only keep those mutations that fall in those domains.
+        If set to None, no filtering will be applied.
     :return:
         (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
          input_vcf_mut_ids)
@@ -114,7 +115,10 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
 
             associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
 
-            if not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
+            # Store mutation if one of the following conditions if fulfilled:
+            #   - no set of genes was provided.
+            #   - a set of genes was provided and the associated genes for the mutation are in this list.
+            if not genes_set or not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
                 # Store all mutations (VCFmut object) and associated genes information in a ordered dict.
                 vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut] \
                     = associated_genes_and_distance_to_tss_dict
@@ -356,7 +360,7 @@ def main():
                         dest='genes_filename',
                         action='store',
                         type=str,
-                        required=True,
+                        required=False,
                         help='Filename with gene names to use as input.'
                         )
     parser.add_argument('--motifs',
@@ -413,8 +417,11 @@ def main():
 
     stats_dict = dict()
 
-    print('Read gene list from "{0:s}" ...\n'.format(args.genes_filename), file=sys.stderr)
-    genes_set = read_genes_filename(args.genes_filename)
+    genes_set = None
+
+    if args.genes_filename:
+        print('Read gene list from "{0:s}" ...\n'.format(args.genes_filename), file=sys.stderr)
+        genes_set = read_genes_filename(args.genes_filename)
 
     motif_ids_set = set()
 
@@ -438,7 +445,9 @@ def main():
         # Use all motif IDs if --motifs and --tfs are not specified.
         motif_ids_set = set(motifsinfo.MotifsInfo.motif_id_to_filename_dict)
 
-    print('Get all mutations that overlap with the regulatory domains of the provided gene set: ',
+    print('Get all mutations that overlap with the regulatory domains of {0:s}: '.format('the provided gene set'
+                                                                                         if args.genes_filename
+                                                                                         else 'genes'),
           end='',
           file=sys.stderr)
 
