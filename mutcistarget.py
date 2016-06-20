@@ -482,11 +482,11 @@ def main():
                 motiflocator_output_filename=args.motiflocator_output_filename
         )
 
-    # Print some statistics about the number of mutations.
+    # Print some statistics.
     print(
-        '\nNumber of mutations in input file: {0:d}'.format(
+        '\nNumber of mutations in input file:\t{0:d}'.format(
             stats_dict['nbr_of_input_mutations']),
-        'Number of mutations associated with genes: {0:d}'.format(
+        'Number of mutations associated with genes:\t{0:d}'.format(
             stats_dict['nbr_of_mutations_associated_with_genes']),
         sep='\n',
         file=sys.stderr
@@ -494,27 +494,28 @@ def main():
 
     if args.motiflocator_output_filename:
         print(
-            'Number of mutations which pass MotifLocator threshold: {0:d}'.format(
+            'Number of mutations which pass MotifLocator threshold:\t{0:d}'.format(
                 stats_dict['nbr_of_mutations_which_pass_motiflocator_threshold']),
             sep='\n',
             file=sys.stderr
         )
 
     print(
-        'Number of motifs used for scoring: {0:d}\n'.format(len(motif_ids_set)),
+        'Number of motifs used for scoring: {0:d}'.format(len(motif_ids_set)),
         sep='\n',
         file=sys.stderr
     )
 
     if args.tfs_filename:
         print(
-            'Number of input TFs: {0:d}'.format(stats_dict['nbr_of_input_tfs']),
-            'Number of input TFs with annotated motifs: {0:d}'.format(
+            'Number of input TFs:\t{0:d}'.format(stats_dict['nbr_of_input_tfs']),
+            'Number of input TFs with annotated motifs:\t{0:d}'.format(
                 stats_dict['nbr_of_input_tfs_with_directly_annotated_motifs']),
             sep='\n',
             file=sys.stderr
         )
 
+    print('', file=sys.stderr)
 
 if __name__ == "__main__":
     main()
