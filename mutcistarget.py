@@ -202,65 +202,65 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
     nbr_of_mutations_which_pass_motiflocator_threshold = 0
 
-    with tempfile.NamedTemporaryFile() as matrix_max_motif_size_15_fh, \
-            tempfile.NamedTemporaryFile() as matrix_min_motif_size_16_max_motif_size_25_fh, \
-            tempfile.NamedTemporaryFile() as matrix_min_motif_size_26_fh, \
+    with tempfile.NamedTemporaryFile() as inclusive_matrix_max_motif_size_15_fh, \
+            tempfile.NamedTemporaryFile() as inclusive_matrix_min_motif_size_16_max_motif_size_25_fh, \
+            tempfile.NamedTemporaryFile() as inclusive_matrix_min_motif_size_26_fh, \
             open(motiflocator_output_filename, 'w') as motiflocator_output_fh:
 
-        filtered_motifs_on_length_dict = dict()
+        filtered_inclusive_motifs_on_length_dict = dict()
 
-        # Get all motifs with a motif length smaller than or equal to 15 in a FilterMotifsOnLength() object.
-        filtered_motifs_on_length_dict['max_motif_size_15'] = motifsinfo.FilterMotifsOnLength(
+        # Get all motifs with a motif length smaller than or equal to 15 in a FilterINCLUSiveMotifsOnLength() object.
+        filtered_inclusive_motifs_on_length_dict['max_motif_size_15'] = motifsinfo.FilterINCLUSiveMotifsOnLength(
             motif_ids=motif_ids_set,
             bp_upstream=20,
             bp_downstream=20,
             min_motif_length=None,
             max_motif_length=15,
             header=True,
-            matrix_fh=matrix_max_motif_size_15_fh
+            inclusive_matrix_fh=inclusive_matrix_max_motif_size_15_fh
         )
 
         # Get all motifs with a motif length greater than 15 and smaller than or equal to 25  in a
-        # FilterMotifsOnLength() object.
-        filtered_motifs_on_length_dict['min_motif_size_16_max_motif_size_25'] = motifsinfo.FilterMotifsOnLength(
+        # FilterINCLUSiveMotifsOnLength() object.
+        filtered_inclusive_motifs_on_length_dict['min_motif_size_16_max_motif_size_25'] = motifsinfo.FilterINCLUSiveMotifsOnLength(
             motif_ids=motif_ids_set,
             bp_upstream=30,
             bp_downstream=30,
             min_motif_length=16,
             max_motif_length=25,
             header=True,
-            matrix_fh=matrix_min_motif_size_16_max_motif_size_25_fh
+            inclusive_matrix_fh=inclusive_matrix_min_motif_size_16_max_motif_size_25_fh
         )
 
-        # Get all motifs with a motif length greater than 25 in a FilterMotifsOnLength() object.
-        filtered_motifs_on_length_dict['min_motif_size_26'] = motifsinfo.FilterMotifsOnLength(
+        # Get all motifs with a motif length greater than 25 in a FilterINCLUSiveMotifsOnLength() object.
+        filtered_inclusive_motifs_on_length_dict['min_motif_size_26'] = motifsinfo.FilterINCLUSiveMotifsOnLength(
             motif_ids=motif_ids_set,
             bp_upstream=60,
             bp_downstream=60,
             min_motif_length=26,
             max_motif_length=None,
             header=True,
-            matrix_fh=matrix_min_motif_size_26_fh
+            inclusive_matrix_fh=inclusive_matrix_min_motif_size_26_fh
         )
 
         # Store the keys in a separate list.
-        filtered_motifs_on_length_keys = [
+        filtered_inclusive_motifs_on_length_keys = [
             'max_motif_size_15',
             'min_motif_size_16_max_motif_size_25',
             'min_motif_size_26',
         ]
 
         # Loop over the list.
-        for filtered_motifs_on_length_key in filtered_motifs_on_length_keys:
-            if filtered_motifs_on_length_dict[filtered_motifs_on_length_key].has_motif_ids:
+        for filtered_inclusive_motifs_on_length_key in filtered_inclusive_motifs_on_length_keys:
+            if filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].has_motif_ids:
                 # Write temporary file with PWMs in INCLUSive format.
-                filtered_motifs_on_length_dict[filtered_motifs_on_length_key].write_matrix_file()
+                filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].write_matrix_file()
             else:
-                # Remove key from dictionary if the FilterMotifsOnLength() object did not retain any motif IDs.
-                del filtered_motifs_on_length_dict[filtered_motifs_on_length_key]
+                # Remove key from dictionary if the FilterINCLUSiveMotifsOnLength() object did not retain any motif IDs.
+                del filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key]
 
-                # Also remove the entry from the filtered_motifs_on_length_keys list.
-                filtered_motifs_on_length_keys.remove(filtered_motifs_on_length_key)
+                # Also remove the entry from the filtered_inclusive_motifs_on_length_keys list.
+                filtered_inclusive_motifs_on_length_keys.remove(filtered_inclusive_motifs_on_length_key)
 
         # Write header to the output file.
         print('# chrom',
@@ -291,15 +291,15 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
             motiflocator_delta_scores = dict()
 
-            for filtered_motifs_on_length_key in filtered_motifs_on_length_keys:
+            for filtered_inclusive_motifs_on_length_key in filtered_inclusive_motifs_on_length_keys:
                 # Score mutation with MotifLocator with settings provided in FilterMotifsOnLength() object.
                 motiflocator_delta_scores.update(
                     motiflocator.calculate_motiflocator_delta_scores(
                         fasta_string=vcf_mut.make_fasta_for_wt_and_mut(
-                            bp_upstream=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].bp_upstream,
-                            bp_downstream=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].bp_downstream
+                            bp_upstream=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].bp_upstream,
+                            bp_downstream=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].bp_downstream
                         ),
-                        matrix_filename=filtered_motifs_on_length_dict[filtered_motifs_on_length_key].matrix_fh.name
+                        inclusive_matrix_filename=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].inclusive_matrix_fh.name
                     )
                 )
 
@@ -472,7 +472,7 @@ def main():
 
     if not args.motif_ids_filename and not args.tfs_filename:
         # Use all motif IDs if --motifs and --tfs are not specified.
-        motif_ids_set = set(motifsinfo.MotifsInfo.motif_id_to_filename_dict)
+        motif_ids_set = set(motifsinfo.MotifsInfo.motif_id_to_inclusive_filename_dict)
 
     print('Get all mutations that overlap with the regulatory domains of {0:s}: '.format('the provided gene set'
                                                                                          if args.genes_filename

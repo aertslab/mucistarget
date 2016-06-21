@@ -99,7 +99,7 @@ class MotifLocatorDeltaScore:
 
 
 def calculate_motiflocator_delta_scores(fasta_string,
-                                        matrix_filename,
+                                        inclusive_matrix_filename,
                                         motiflocator_path=default_motiflocator_path,
                                         background_motiflocator_filename=default_background_motiflocator_filename,
                                         min_score_threshold=default_min_score_threshold):
@@ -107,7 +107,7 @@ def calculate_motiflocator_delta_scores(fasta_string,
     Calculate MotifLocator delta scores between wildtype and mutant FASTA sequences.
 
     :param fasta_string: String with wildtype and mutant FASTA sequence constructed by VCFmut.make_fasta_for_wt_and_mut().
-    :param matrix_filename: Motifs (INCLUsive format) to score with MotifLocator.
+    :param inclusive_matrix_filename: Filename with motifs in INCLUsive format to score with MotifLocator.
     :param motiflocator_path: Path to MotifLocator.
     :param background_motiflocator_filename: Background file used by MotifLocator.
     :param min_score_threshold: Minimum MotifLocator score threshold for wildtype or mutant to keep the result.
@@ -118,7 +118,7 @@ def calculate_motiflocator_delta_scores(fasta_string,
     motiflocator_command = [motiflocator_path,
                             '-f', '/dev/stdin',
                             '-b', background_motiflocator_filename,
-                            '-m', matrix_filename,
+                            '-m', inclusive_matrix_filename,
                             '-t', '0.0',
                             '-s', '1',
                             '-a', '0']

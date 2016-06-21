@@ -30,50 +30,51 @@ default_motif_to_tf_filename = os.path.join(os.path.dirname(__file__),
                                             'directly_annotated_motifs',
                                             'motifs-v7-nr.hgnc-m0.001-o0.0.tbl')
 
-# Directory with all motifs in MotifLocator (INCLUSive) format.
-default_motif_locator_motifs_dir = os.path.join(os.path.dirname(__file__),
-                                                'data',
-                                                'directly_annotated_motifs',
-                                                'motif_locator')
+# Directory with all motifs in INCLUSive format.
+default_inclusive_motifs_dir = os.path.join(os.path.dirname(__file__),
+                                            'data',
+                                            'directly_annotated_motifs',
+                                            'inclusive')
 
-# Extension used for a motif filename in MotifLocator (INCLUSive) format.
-default_motif_locator_motifs_extension = '.INCLUsive.txt'
+# Extension used for a motif filename in INCLUSive format.
+default_inclusive_motifs_extension = '.INCLUsive.txt'
 
 
 def get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
-        motif_locator_motifs_dir=default_motif_locator_motifs_dir,
-        motif_locator_motifs_extension=default_motif_locator_motifs_extension):
+        inclusive_motifs_dir=default_inclusive_motifs_dir,
+        inclusive_motifs_extension=default_inclusive_motifs_extension):
     """
     Get motif names and motif filenames and motif lengths and PWMs.
 
-    :param motif_locator_motifs_dir: Directory with motifs in MotifLocator (INCLUsive) format.
-    :param motif_locator_motifs_extension: Extension used for a motif filename in MotifLocator (INCLUSive) format.
+    :param inclusive_motifs_dir: Directory with motifs in INCLUsive format.
+    :param inclusive_motifs_extension: Extension used for a motif filename in INCLUSive format.
 
-    :return: motif_id_to_motif_name_dict, motif_name_to_motif_id_dict, motif_id_to_filename_dict, motif_id_to_motif_length_dict, motif_id_to_pwm_dict
+    :return: motif_id_to_motif_name_dict, motif_name_to_motif_id_dict, motif_id_to_inclusive_filename_dict,
+             motif_id_to_motif_length_dict, motif_id_to_inclusive_pwm_dict
     """
 
     motif_id_to_motif_name_dict = dict()
     motif_name_to_motif_id_dict = dict()
-    motif_id_to_filename_dict = dict()
+    motif_id_to_inclusive_filename_dict = dict()
     motif_id_to_motif_length_dict = dict()
-    motif_id_to_pwm_dict = dict()
+    motif_id_to_inclusive_pwm_dict = dict()
 
-    # Get all motif files in MotifLocator (INCLUSive) format from the MotifLocator directory.
-    for folder, subdirs, filenames in os.walk(motif_locator_motifs_dir):
+    # Get all motif files in INCLUSive format from the INCLUSive directory.
+    for folder, subdirs, filenames in os.walk(inclusive_motifs_dir):
         for filename in filenames:
-            if filename.endswith(motif_locator_motifs_extension):
-                motif_locator_motif_filename = os.path.join(motif_locator_motifs_dir, filename)
+            if filename.endswith(inclusive_motifs_extension):
+                inclusive_motif_filename = os.path.join(inclusive_motifs_dir, filename)
 
-                motif_id = filename[0:- len(motif_locator_motifs_extension)]
+                motif_id = filename[0:- len(inclusive_motifs_extension)]
 
-                pwm = ''
+                inclusive_pwm = ''
 
-                with open(motif_locator_motif_filename, 'r') as fh:
+                with open(inclusive_motif_filename, 'r') as fh:
                     for full_line in fh:
                         line = full_line.rstrip('\n')
 
                         if line != '#INCLUSive Motif Model' and line != '':
-                            pwm += full_line
+                            inclusive_pwm += full_line
 
                             columns = line.split(' ')
 
@@ -86,16 +87,16 @@ def get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
                                 elif columns[0] == '#W':
                                     motif_length = columns[2]
 
-                                    motif_id_to_filename_dict[motif_id] = motif_locator_motif_filename
+                                    motif_id_to_inclusive_filename_dict[motif_id] = inclusive_motif_filename
                                     motif_id_to_motif_length_dict[motif_id] = int(motif_length)
 
-                    motif_id_to_pwm_dict[motif_id] = pwm
+                    motif_id_to_inclusive_pwm_dict[motif_id] = inclusive_pwm
 
     return (motif_id_to_motif_name_dict,
             motif_name_to_motif_id_dict,
-            motif_id_to_filename_dict,
+            motif_id_to_inclusive_filename_dict,
             motif_id_to_motif_length_dict,
-            motif_id_to_pwm_dict)
+            motif_id_to_inclusive_pwm_dict)
 
 
 def get_direct_motif_to_tf_annotation(motif_to_tf_filename=default_motif_to_tf_filename,
@@ -151,16 +152,16 @@ class MotifsInfo:
 
     (motif_id_to_motif_name_dict,
      motif_name_to_motif_id_dict,
-     motif_id_to_filename_dict,
+     motif_id_to_inclusive_filename_dict,
      motif_id_to_motif_length_dict,
-     motif_id_to_pwm_dict) = get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
-        default_motif_locator_motifs_dir,
-        default_motif_locator_motifs_extension
+     motif_id_to_inclusive_pwm_dict) = get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
+        default_inclusive_motifs_dir,
+        default_inclusive_motifs_extension
     )
 
     motif_to_tfs_dict, tf_to_motifs_dict = get_direct_motif_to_tf_annotation(
         default_motif_to_tf_filename,
-        motif_ids_to_consider=motif_id_to_filename_dict
+        motif_ids_to_consider=motif_id_to_inclusive_filename_dict
     )
 
     @staticmethod
@@ -194,14 +195,14 @@ class MotifsInfo:
         return MotifsInfo.motif_id_to_motif_length_dict.get(motif_id, None)
 
     @staticmethod
-    def get_motif_filename(motif_id):
+    def get_inclusive_motif_filename(motif_id):
         """
         Get motif filename for a motif.
 
         :param motif_id: motif ID.
-        :return: motif filename.
+        :return: INCLUSive motif filename.
         """
-        return MotifsInfo.motif_id_to_filename_dict.get(motif_id, None)
+        return MotifsInfo.motif_id_to_inclusive_filename_dict.get(motif_id, None)
 
     @staticmethod
     def get_tfs_for_motif(motif_id):
@@ -224,7 +225,7 @@ class MotifsInfo:
         return MotifsInfo.tf_to_motifs_dict.get(tf, None)
 
     @staticmethod
-    def get_pwm(motif_id, header=False):
+    def get_inclusive_pwm(motif_id, header=False):
         """
         Get PWM in INCLUSive format for a motif.
 
@@ -233,12 +234,12 @@ class MotifsInfo:
         :return: string with PWM in INCLUSive format for motif ID.
         """
         if header:
-            return '#INCLUSive Motif Model\n\n' + MotifsInfo.motif_id_to_pwm_dict[motif_id] + '\n'
+            return '#INCLUSive Motif Model\n\n' + MotifsInfo.motif_id_to_inclusive_pwm_dict[motif_id] + '\n'
         else:
-            return MotifsInfo.motif_id_to_pwm_dict[motif_id] + '\n'
+            return MotifsInfo.motif_id_to_inclusive_pwm_dict[motif_id] + '\n'
 
     @staticmethod
-    def get_pwms(motif_ids, min_motif_length=None, max_motif_length=None, header=True):
+    def get_inclusive_pwms(motif_ids, min_motif_length=None, max_motif_length=None, header=True):
         """
         Get PWMs in INCLUSive format for a list of motifs.
 
@@ -256,7 +257,7 @@ class MotifsInfo:
 
         if not motif_ids:
             # Set motif_ids to sorted list of all motifs if motifs_ids is None.
-            motif_ids = sorted(MotifsInfo.motif_id_to_filename_dict)
+            motif_ids = sorted(MotifsInfo.motif_id_to_inclusive_filename_dict)
 
         selected_motif_ids = [
             motif_id
@@ -266,18 +267,18 @@ class MotifsInfo:
         ]
 
         if header:
-            pwms = '#INCLUSive Motif Model\n\n'
+            inclusive_pwms = '#INCLUSive Motif Model\n\n'
         else:
-            pwms = ''
+            inclusive_pwms = ''
 
-        pwms += ''.join([MotifsInfo.get_pwm(motif_id)
-                         for motif_id in selected_motif_ids])
+        inclusive_pwms += ''.join([MotifsInfo.get_inclusive_pwm(motif_id)
+                                   for motif_id in selected_motif_ids])
 
         # Return:
         #   - string with PWMs in INCLUSive format.
         #   - list of motif IDs that passed the filtering step.
         #   - are there motif IDs that passed the filtering (True or False).
-        return pwms, selected_motif_ids, True if len(selected_motif_ids) else False
+        return inclusive_pwms, selected_motif_ids, True if len(selected_motif_ids) else False
 
     @staticmethod
     def write_motif_id_and_name_to_tfs_annotation_filename(motif_id_and_name_to_tfs_annotation_filename,
@@ -349,8 +350,9 @@ class MotifsInfo:
                               file=fh)
 
 
-class FilterMotifsOnLength:
-    def __init__(self, motif_ids, bp_upstream=0, bp_downstream=0, min_motif_length=None, max_motif_length=None, header=True, matrix_fh=None):
+class FilterINCLUSiveMotifsOnLength:
+    def __init__(self, motif_ids, bp_upstream=0, bp_downstream=0, min_motif_length=None, max_motif_length=None,
+                 header=True, inclusive_matrix_fh=None):
         """
         Filter list of motif IDs based on their motif length.
         Get PWMs in INCLUSive format for a list of motifs.
@@ -364,11 +366,11 @@ class FilterMotifsOnLength:
         :param max_motif_length: Only include PWMs which have a maximum motif length of max_motif_length
                                  or do not use this restriction if this parameter is set to None.
         :param header: Add "#INCLUSive Motif Model" header line (True) or not (False).
-        :param matrix_fh: file handle to which the string with PMWs in INCLUSive format will be written.
+        :param inclusive_matrix_fh: file handle to which the string with PMWs in INCLUSive format will be written.
         :return:
         """
 
-        self.pwms, self.motif_ids, self.has_motif_ids = MotifsInfo.get_pwms(
+        self.inclusive_pwms, self.motif_ids, self.has_motif_ids = MotifsInfo.get_inclusive_pwms(
             motif_ids=motif_ids,
             min_motif_length=min_motif_length,
             max_motif_length=max_motif_length,
@@ -380,7 +382,7 @@ class FilterMotifsOnLength:
         self.min_motif_length = min_motif_length
         self.max_motif_length = max_motif_length
         self.header = header
-        self.matrix_fh = matrix_fh
+        self.inclusive_matrix_fh = inclusive_matrix_fh
 
     def write_matrix_file(self):
         """
@@ -388,8 +390,8 @@ class FilterMotifsOnLength:
 
         :return:
         """
-        self.matrix_fh.write(self.pwms)
-        self.matrix_fh.flush()
+        self.inclusive_matrix_fh.write(self.inclusive_pwms)
+        self.inclusive_matrix_fh.flush()
 
 
 def main():
