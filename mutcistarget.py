@@ -120,10 +120,18 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
 
             associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
 
-            # Store mutation if one of the following conditions if fulfilled:
-            #   - no set of genes was provided.
-            #   - a set of genes was provided and the associated genes for the mutation are in this list.
-            if not genes_set or not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
+            if genes_set and not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
+                # If a set of genes was provided, only keep those associated genes for the mutation that appear in this
+                # set of genes.
+                associated_genes_and_distance_to_tss_dict = (
+                    {associated_genes_and_distance_to_tss_key: associated_genes_and_distance_to_tss_dict[
+                        associated_genes_and_distance_to_tss_key]
+                     for associated_genes_and_distance_to_tss_key in associated_genes_and_distance_to_tss_dict
+                     if associated_genes_and_distance_to_tss_key in genes_set
+                     }
+                )
+
+            if associated_genes_and_distance_to_tss_dict:
                 # Store all mutations (VCFmut object) and associated genes information in a ordered dict.
                 vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut] \
                     = associated_genes_and_distance_to_tss_dict
