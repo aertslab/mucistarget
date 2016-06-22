@@ -30,6 +30,15 @@ default_motif_to_tf_filename = os.path.join(os.path.dirname(__file__),
                                             'directly_annotated_motifs',
                                             'motifs-v7-nr.hgnc-m0.001-o0.0.tbl')
 
+# Directory with all motifs in Cluster-Buster format.
+default_clusterbuster_motifs_dir = os.path.join(os.path.dirname(__file__),
+                                                'data',
+                                                'directly_annotated_motifs',
+                                                'clusterbuster')
+
+# Extension used for a motif filename in Cluster-Buster format.
+default_clusterbuster_motifs_extension = '.cb'
+
 # Directory with all motifs in INCLUSive format.
 default_inclusive_motifs_dir = os.path.join(os.path.dirname(__file__),
                                             'data',
@@ -41,6 +50,8 @@ default_inclusive_motifs_extension = '.INCLUsive.txt'
 
 
 def get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
+        clusterbuster_motifs_dir=default_clusterbuster_motifs_dir,
+        clusterbuster_motifs_extension=default_clusterbuster_motifs_extension,
         inclusive_motifs_dir=default_inclusive_motifs_dir,
         inclusive_motifs_extension=default_inclusive_motifs_extension):
     """
@@ -49,15 +60,30 @@ def get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
     :param inclusive_motifs_dir: Directory with motifs in INCLUsive format.
     :param inclusive_motifs_extension: Extension used for a motif filename in INCLUSive format.
 
-    :return: motif_id_to_motif_name_dict, motif_name_to_motif_id_dict, motif_id_to_inclusive_filename_dict,
-             motif_id_to_motif_length_dict, motif_id_to_inclusive_pwm_dict
+    :return: (motif_id_to_motif_name_dict,
+              motif_name_to_motif_id_dict,
+              motif_id_to_motif_length_dict,
+              motif_id_to_clusterbuster_filename_dict,
+              motif_id_to_inclusive_filename_dict,
+              motif_id_to_inclusive_pwm_dict)
     """
 
     motif_id_to_motif_name_dict = dict()
     motif_name_to_motif_id_dict = dict()
-    motif_id_to_inclusive_filename_dict = dict()
     motif_id_to_motif_length_dict = dict()
+    motif_id_to_clusterbuster_filename_dict = dict()
+    motif_id_to_inclusive_filename_dict = dict()
     motif_id_to_inclusive_pwm_dict = dict()
+
+    # Get all motif files in Cluster-Buster format from the Cluster-Buster directory.
+    for folder, subdirs, filenames in os.walk(clusterbuster_motifs_dir):
+        for filename in filenames:
+            if filename.endswith(clusterbuster_motifs_extension):
+                clusterbuster_motif_filename = os.path.join(clusterbuster_motifs_dir, filename)
+
+                motif_id = filename[0:- len(clusterbuster_motifs_extension)]
+
+                motif_id_to_clusterbuster_filename_dict[motif_id] = clusterbuster_motif_filename
 
     # Get all motif files in INCLUSive format from the INCLUSive directory.
     for folder, subdirs, filenames in os.walk(inclusive_motifs_dir):
@@ -92,10 +118,21 @@ def get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
 
                     motif_id_to_inclusive_pwm_dict[motif_id] = inclusive_pwm
 
+    if set(motif_id_to_clusterbuster_filename_dict) != set(motif_id_to_inclusive_filename_dict):
+        raise ValueError(
+            'The Cluster-Buster and INCLUSive motif directory does not contain the same motifs. '
+            'Motif IDs which are unique for Cluster-Buster: {0:s}. '
+            'Motif IDs which are unique for INCLUSive: {1:s}'.format(
+                set(motif_id_to_clusterbuster_filename_dict).difference(set(motif_id_to_inclusive_filename_dict)),
+                set(motif_id_to_inclusive_filename_dict).difference(set(motif_id_to_clusterbuster_filename_dict))
+            )
+        )
+
     return (motif_id_to_motif_name_dict,
             motif_name_to_motif_id_dict,
-            motif_id_to_inclusive_filename_dict,
             motif_id_to_motif_length_dict,
+            motif_id_to_clusterbuster_filename_dict,
+            motif_id_to_inclusive_filename_dict,
             motif_id_to_inclusive_pwm_dict)
 
 
@@ -145,18 +182,21 @@ class MotifsInfo:
     Class for retrieving info related to motifs:
       - Get motif name.
       - Get length of a motif.
-      - Get motif filename for a motif.
+      - Get motif filename for a motif in Cluster-Buster and INCLUSive format.
       - Get directly annotated TFs for a motif.
       - Get motifs directly annotated for a certain TF.
     """
 
     (motif_id_to_motif_name_dict,
      motif_name_to_motif_id_dict,
-     motif_id_to_inclusive_filename_dict,
      motif_id_to_motif_length_dict,
+     motif_id_to_clusterbuster_filename_dict,
+     motif_id_to_inclusive_filename_dict,
      motif_id_to_inclusive_pwm_dict) = get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
-        default_inclusive_motifs_dir,
-        default_inclusive_motifs_extension
+        clusterbuster_motifs_dir=default_clusterbuster_motifs_dir,
+        clusterbuster_motifs_extension=default_clusterbuster_motifs_extension,
+        inclusive_motifs_dir=default_inclusive_motifs_dir,
+        inclusive_motifs_extension=default_inclusive_motifs_extension
     )
 
     motif_to_tfs_dict, tf_to_motifs_dict = get_direct_motif_to_tf_annotation(
@@ -195,9 +235,19 @@ class MotifsInfo:
         return MotifsInfo.motif_id_to_motif_length_dict.get(motif_id, None)
 
     @staticmethod
+    def get_clusterbuster_motif_filename(motif_id):
+        """
+        Get motif filename for a motif in Cluster-Buster format.
+
+        :param motif_id: motif ID.
+        :return: Cluster-Buster motif filename.
+        """
+        return MotifsInfo.motif_id_to_clusterbuster_filename_dict.get(motif_id, None)
+
+    @staticmethod
     def get_inclusive_motif_filename(motif_id):
         """
-        Get motif filename for a motif.
+        Get motif filename for a motif in INCLUSive format.
 
         :param motif_id: motif ID.
         :return: INCLUSive motif filename.
