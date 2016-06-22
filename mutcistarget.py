@@ -290,8 +290,13 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
               sep='\t',
               file=motiflocator_output_fh)
 
-        for vcf_mut, associated_genes_and_distance_to_tss_dict in vcf_mut_to_associated_genes_and_distance_to_tss_dict.iteritems():
-            print('  Scoring mutation "{0:s}" with MotifLocator: '.format(vcf_mut.mut_id),
+        nbr_mutations = len(vcf_mut_to_associated_genes_and_distance_to_tss_dict)
+
+        for mutation_idx, (vcf_mut, associated_genes_and_distance_to_tss_dict) in enumerate(
+                vcf_mut_to_associated_genes_and_distance_to_tss_dict.iteritems()):
+            print('  Scoring mutation "{0:s}" ({1:d} of {2:d}) with MotifLocator: '.format(vcf_mut.mut_id,
+                                                                                           mutation_idx + 1,
+                                                                                           nbr_mutations),
                   end='',
                   file=log_fh)
 
