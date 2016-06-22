@@ -23,7 +23,7 @@ default_background_motiflocator_filename = os.path.join(os.path.dirname(__file__
                                                         'hg19.noncoding_genome.fasta.motifLoc322.bg')
 
 default_min_score_threshold = 0.80
-default_min_delta_threshold = 0.05
+default_min_delta_score_threshold = 0.05
 
 
 class MotifLocatorDeltaScore:
@@ -61,39 +61,45 @@ class MotifLocatorDeltaScore:
         return '<MotifLocatorDeltaScore>\n' \
                '  wt_score: {0:f}\n' \
                '  mut_score: {1:f}\n' \
-               '  delta_score: {2:f}\n'.format(self.wt_score,
-                                               self.mut_score,
-                                               self.delta_score)
+               '  delta_score: {2:f}\n' \
+               '  wt_consensus: {3:s}\n' \
+               '  mut_consensus: {4:s}\n'.format(self.wt_score,
+                                                 self.mut_score,
+                                                 self.delta_score,
+                                                 self.wt_consensus,
+                                                 self.mut_consensus)
 
     def is_motif_gain(self,
                       min_mut_score_threshold=default_min_score_threshold,
-                      min_delta_threshold=default_min_delta_threshold):
+                      min_delta_score_threshold=default_min_delta_score_threshold):
         """
-        Is the  MotifLocator delta score a motif gain?
+        Is the MotifLocator delta score a motif gain?
 
-        :param min_mut_score_threshold: Minimum mutant MotifLocator score.
-        :param min_delta_threshold: Minimum delta score needed before the mutation is considered to be a motif gain
-                                    mutation.
+        :param min_mut_score_threshold:
+            Minimum mutant MotifLocator score.
+        :param min_delta_score_threshold:
+            Minimum delta score needed before the mutation is considered to be a motif gain mutation.
 
         :return: True or False
         """
-        return (self.delta_score >= min_delta_threshold
+        return (self.delta_score >= min_delta_score_threshold
                 if self.mut_score >= min_mut_score_threshold
                 else False)
 
     def is_motif_loss(self,
                       min_wt_score_threshold=default_min_score_threshold,
-                      min_delta_threshold=default_min_delta_threshold):
+                      min_delta_score_threshold=default_min_delta_score_threshold):
         """
-        Is the  MotifLocator delta score a motif loss?
+        Is the MotifLocator delta score a motif loss?
 
-        :param min_wt_score_threshold: Minimum wildtype MotifLocator score.
-        :param min_delta_threshold: Minimum delta score needed before the mutation is considered to be a motif loss
-                                    mutation.
+        :param min_wt_score_threshold:
+            Minimum wildtype MotifLocator score.
+        :param min_delta_score_threshold:
+            Minimum delta score needed before the mutation is considered to be a motif loss mutation.
 
         :return: True or False
         """
-        return ((- self.delta_score) >= min_delta_threshold
+        return ((- self.delta_score) >= min_delta_score_threshold
                 if self.wt_score >= min_wt_score_threshold
                 else False)
 
