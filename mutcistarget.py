@@ -120,7 +120,7 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
 
             associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
 
-            if genes_set and not set(associated_genes_and_distance_to_tss_dict).isdisjoint(genes_set):
+            if genes_set:
                 # If a set of genes was provided, only keep those associated genes for the mutation that appear in this
                 # set of genes.
                 associated_genes_and_distance_to_tss_dict = (
