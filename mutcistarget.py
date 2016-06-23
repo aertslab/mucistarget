@@ -181,6 +181,119 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
                       file=mut_to_associated_genes_fh)
 
 
+def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+                                                                 motif_ids_set,
+                                                                 clusterbuster_output_filename,
+                                                                 log_fh=sys.stderr):
+    """
+    Calculate the MotifLocator scores for the wildtype and mutant FASTA sequence for each mutation and for each motif
+    and write the result to a file.
+
+    :param vcf_mut_to_associated_genes_and_distance_to_tss_dict:
+        OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
+        mutation to the TSS as values.
+        This dictionary can be made with get_all_mutations_that_overlap_with_regdoms_of_genes.
+    :param motif_ids_set:
+        set of motif IDs
+    :param clusterbuster_output_filename:
+        Output filename to which Cluster-Buster CRM and motif delta scores are written.
+    :param log_fh:
+        File handle to which the progress information is written.
+    :return:
+        nbr_of_mutations_which_pass_clusterbuster_crm_score_threshold:
+            number of mutation that pass the Cluster-Buster CRM score threshold.
+    """
+
+    print('Score mutations with Cluster-Buster ...\n', file=log_fh)
+
+    import motifsinfo
+    import clusterbuster
+
+    vcf_mut_ids_passing_clusterbuster_crm_score_threshold = set()
+
+    nbr_motifs = len(motif_ids_set)
+
+    with open(clusterbuster_output_filename, 'w') as clusterbuster_output_fh:
+        # Write header to the output file.
+        print('# chrom',
+              'start',
+              'reference',
+              'mutation',
+              'mutation type',
+              'mutation ID',
+              'associated gene',
+              'distance to TSS',
+              'motif ID',
+              'motif name',
+              'directly annotated TFs',
+              'wildtype Cluster-Buster CRM score',
+              'mutant Cluster-Buster CRM score',
+              'delta Cluster-Buster CRM score',
+              'wildtype Cluster-Buster motif score',
+              'mutant Cluster-Buster motif score',
+              'delta Cluster-Buster motif score',
+              'wildtype consensus sequence',
+              'mutant consensus sequence',
+              sep='\t',
+              file=clusterbuster_output_fh)
+
+        for motif_idx, motif_id in enumerate(sorted(motif_ids_set)):
+            print('  Scoring all mutations with Cluster-Buster for motif "{0:s}" ({1:d} of {2:d}): '.format(
+                motif_id,
+                motif_idx + 1,
+                nbr_motifs),
+                end='',
+                file=log_fh)
+
+            clusterbuster_start_time = time.time()
+
+            clusterbuster_delta_scores = \
+                clusterbuster.calculate_clusterbuster_delta_scores(
+                    vcf_muts=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+                    motif_id=motif_id
+            )
+
+            # Write to the output file.
+            for vcf_mut, clusterbuster_delta_score in clusterbuster_delta_scores.iteritems():
+                associated_genes_and_distance_to_tss_dict = vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut]
+
+                for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
+                    vcf_mut_ids_passing_clusterbuster_crm_score_threshold.add(vcf_mut.mut_id)
+
+                    print(vcf_mut,
+                          associated_gene,
+                          '{0:+}'.format(distance_to_tss),
+                          '\t'.join([motif_id,
+                                     motifsinfo.MotifsInfo.get_motif_name(motif_id),
+                                     ';'.join(motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)),
+                                     str(clusterbuster_delta_score.wt_crm_score),
+                                     str(clusterbuster_delta_score.mut_crm_score),
+                                     str(clusterbuster_delta_score.crm_delta_score),
+                                     str(clusterbuster_delta_score.wt_motif_score),
+                                     str(clusterbuster_delta_score.mut_motif_score),
+                                     str(clusterbuster_delta_score.motif_delta_score),
+                                     clusterbuster_delta_score.wt_consensus,
+                                     clusterbuster_delta_score.mut_consensus,
+                                     ]
+                                    ),
+                          sep='\t',
+                          file=clusterbuster_output_fh)
+
+            clusterbuster_end_time = time.time()
+            print('{0:f} seconds.'.format(clusterbuster_end_time - clusterbuster_start_time),
+                  file=log_fh)
+
+            clusterbuster_output_fh.flush()
+
+    # Count the number of input mutations that are associated with genes and that pass the Cluster-Buster CRM score
+    # threshold.
+    nbr_of_mutations_which_pass_clusterbuster_crm_score_threshold = len(
+        vcf_mut_ids_passing_clusterbuster_crm_score_threshold
+    )
+
+    return nbr_of_mutations_which_pass_clusterbuster_crm_score_threshold
+
+
 def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_dict,
                                                   motif_ids_set,
                                                   motiflocator_output_filename,
@@ -404,6 +517,13 @@ def main():
                         help='Filename with TFs for which directly annotated motif IDs will be scored. If not '
                              'specified and --motifs is also not specified, scores with all motifs.'
                         )
+    parser.add_argument('--clusterbuster',
+                        dest='clusterbuster_output_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        help='Filename to which the Cluster-Buster CRM and motif delta score output will be written.'
+                        )
     parser.add_argument('--motiflocator',
                         dest='motiflocator_output_filename',
                         action='store',
@@ -516,6 +636,17 @@ def main():
             vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict
         )
 
+    if args.clusterbuster_output_filename:
+        # Calculate the Cluster-Buster CRM and motif scores for the wildtype and mutant FASTA sequence for each
+        # mutation and for each motif and write the result to a file.
+        stats_dict['nbr_of_mutations_which_pass_clusterbuster_crm_score_threshold'] = \
+            calculate_and_write_clusterbuster_crm_and_motif_delta_scores(
+                vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+                motif_ids_set=motif_ids_set,
+                clusterbuster_output_filename=args.clusterbuster_output_filename,
+                log_fh=log_fh
+        )
+
     if args.motiflocator_output_filename:
         # Calculate the MotifLocator scores for the wildtype and mutant FASTA sequence for each mutation and for each
         # motif and write the result to a file.
@@ -545,6 +676,14 @@ def main():
         sep='\n',
         file=log_fh
     )
+
+    if args.clusterbuster_output_filename:
+        print(
+            'Number of mutations which pass Cluster-Buster CRM score threshold:\t{0:d}'.format(
+                stats_dict['nbr_of_mutations_which_pass_clusterbuster_crm_score_threshold']),
+            sep='\n',
+            file=log_fh
+        )
 
     if args.motiflocator_output_filename:
         print(
