@@ -184,6 +184,7 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
 def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_dict,
                                                                  motif_ids_set,
                                                                  clusterbuster_output_filename,
+                                                                 min_clusterbuster_crm_score_threshold,
                                                                  log_fh=sys.stderr):
     """
     Calculate the MotifLocator scores for the wildtype and mutant FASTA sequence for each mutation and for each motif
@@ -197,6 +198,8 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
         set of motif IDs
     :param clusterbuster_output_filename:
         Output filename to which Cluster-Buster CRM and motif delta scores are written.
+    :param min_clusterbuster_crm_score_threshold:
+        Minimum Cluster-Buster CRM score threshold needed in wildtype or mutant to keep the result.
     :param log_fh:
         File handle to which the progress information is written.
     :return:
@@ -250,7 +253,8 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
             clusterbuster_delta_scores = \
                 clusterbuster.calculate_clusterbuster_delta_scores(
                     vcf_muts=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
-                    motif_id=motif_id
+                    motif_id=motif_id,
+                    min_crm_score_threshold=min_clusterbuster_crm_score_threshold
             )
 
             # Write to the output file.
@@ -297,6 +301,7 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
 def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_dict,
                                                   motif_ids_set,
                                                   motiflocator_output_filename,
+                                                  min_motiflocator_score_threshold,
                                                   log_fh=sys.stderr):
     """
     Calculate the MotifLocator scores for the wildtype and mutant FASTA sequence for each mutation and for each motif
@@ -310,6 +315,8 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
         set of motif IDs
     :param motiflocator_output_filename:
         Output filename to which MotifLocator delta scores are written.
+    :param min_motiflocator_score_threshold:
+        Minimum MotifLocator threshold needed in wildtype or mutant to keep the result.
     :param log_fh:
         File handle to which the progress information is written.
     :return:
@@ -425,7 +432,8 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
                             bp_upstream=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].bp_upstream,
                             bp_downstream=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].bp_downstream
                         ),
-                        inclusive_matrix_filename=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].inclusive_matrix_fh.name
+                        inclusive_matrix_filename=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].inclusive_matrix_fh.name,
+                        min_score_threshold=min_motiflocator_score_threshold
                     )
                 )
 
@@ -464,6 +472,9 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
 
 def main():
+    default_min_clusterbuster_crm_score_threshold = 0.00
+    default_min_motiflocator_score_threshold = 0.80
+
     parser = argparse.ArgumentParser(
         description='Calculate the impact of mutations on the removal or introduction of TF binding sites.'
     )
@@ -530,6 +541,24 @@ def main():
                         type=str,
                         required=False,
                         help='Filename to which the MotifLocator delta score output will be written.'
+                        )
+    parser.add_argument('--min-clusterbuster-crm-score-threshold',
+                        dest='min_clusterbuster_crm_score_threshold',
+                        action='store',
+                        type=float,
+                        required=False,
+                        default=default_min_clusterbuster_crm_score_threshold,
+                        help='Minimum Cluster-Buster CRM score threshold (default: {0:f}).'.format(
+                            default_min_clusterbuster_crm_score_threshold)
+                        )
+    parser.add_argument('--min-motiflocator-score-threshold',
+                        dest='min_motiflocator_score_threshold',
+                        action='store',
+                        type=float,
+                        required=False,
+                        default=default_min_motiflocator_score_threshold,
+                        help='Minimum MotifLocator score threshold (default: {0:f}).'.format(
+                            default_min_motiflocator_score_threshold)
                         )
     parser.add_argument('--mut2genes',
                         dest='mut_to_associated_genes_output_filename',
@@ -644,6 +673,7 @@ def main():
                 vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
                 motif_ids_set=motif_ids_set,
                 clusterbuster_output_filename=args.clusterbuster_output_filename,
+                min_clusterbuster_crm_score_threshold=args.min_clusterbuster_crm_score_threshold,
                 log_fh=log_fh
         )
 
@@ -655,6 +685,7 @@ def main():
                 vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
                 motif_ids_set=motif_ids_set,
                 motiflocator_output_filename=args.motiflocator_output_filename,
+                min_motiflocator_score_threshold=args.min_motiflocator_score_threshold,
                 log_fh=log_fh
         )
 
