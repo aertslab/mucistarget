@@ -485,7 +485,7 @@ def main():
                        action='store',
                        type=str,
                        required=False,
-                       help='VCF file with mutations (column 1, 2, 3 and 5 are used).')
+                       help='VCF file with mutations (column 1, 2, 4 and 5 are used).')
     group.add_argument('--mut-ids',
                        dest='mut_ids_filename',
                        action='store',
