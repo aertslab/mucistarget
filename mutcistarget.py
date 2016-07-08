@@ -380,8 +380,9 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
             'min_motif_size_26',
         ]
 
-        # Loop over the list.
-        for filtered_inclusive_motifs_on_length_key in filtered_inclusive_motifs_on_length_keys:
+        # Loop over a copy of the list, else after deleting an element of the list,
+        # the next iteration of the for loop skips an element.
+        for filtered_inclusive_motifs_on_length_key in filtered_inclusive_motifs_on_length_keys[:]:
             if filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].has_motif_ids:
                 # Write temporary file with PWMs in INCLUSive format.
                 filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].write_matrix_file()
