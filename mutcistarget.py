@@ -264,12 +264,14 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
                 for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
                     vcf_mut_ids_passing_clusterbuster_crm_score_threshold.add(vcf_mut.mut_id)
 
+                    tfs = motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)
+
                     print(vcf_mut,
                           associated_gene,
                           '{0:+}'.format(distance_to_tss),
                           '\t'.join([motif_id,
                                      motifsinfo.MotifsInfo.get_motif_name(motif_id),
-                                     ';'.join(motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)),
+                                     ';'.join(tfs if tfs else ['']),
                                      str(clusterbuster_delta_score.wt_crm_score),
                                      str(clusterbuster_delta_score.mut_crm_score),
                                      str(clusterbuster_delta_score.crm_delta_score),
@@ -446,12 +448,14 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
             # Write to the output file.
             for motif_id, motiflocator_delta in motiflocator_delta_scores.iteritems():
                 for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
+                    tfs = motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)
+
                     print(vcf_mut,
                           associated_gene,
                           '{0:+}'.format(distance_to_tss),
                           '\t'.join([motif_id,
                                      motifsinfo.MotifsInfo.get_motif_name(motif_id),
-                                     ';'.join(motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)),
+                                     ';'.join(tfs if tfs else ['']),
                                      str(motiflocator_delta.wt_score),
                                      str(motiflocator_delta.mut_score),
                                      str(motiflocator_delta.delta_score),
