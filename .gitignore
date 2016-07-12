@@ -1,0 +1,13 @@
+# Generic files to ignore.
+*~
+._*
+*.DS_Store
+
+# Ignore data directory.
+/data/
+
+# Ignore PyCharm directory.
+/.idea/
+
+# Ignore Python byte code files.
+*.pyc
