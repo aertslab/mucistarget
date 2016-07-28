@@ -649,10 +649,15 @@ def main():
 
     mut_to_associated_genes_start_time = time.time()
 
-    (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
-     input_vcf_mut_ids,
-     associated_genes_set
-     ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set)
+    try:
+        (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+         input_vcf_mut_ids,
+         associated_genes_set
+         ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set)
+    except ValueError as e:
+        print('\nInvalid mutation: ' + e.message,
+              file=log_fh)
+        sys.exit(1)
 
     stats_dict['nbr_of_input_mutations'] = len(input_vcf_mut_ids)
     stats_dict['nbr_of_mutations_associated_with_genes'] = len(vcf_mut_to_associated_genes_and_distance_to_tss_dict)
