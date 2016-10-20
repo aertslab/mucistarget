@@ -489,14 +489,14 @@ def main():
         description='Calculate the impact of mutations on the removal or introduction of TF binding sites.'
     )
 
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--vcf',
+    mutations_input_group = parser.add_mutually_exclusive_group(required=True)
+    mutations_input_group.add_argument('--vcf',
                        dest='vcf_filename',
                        action='store',
                        type=str,
                        required=False,
                        help='VCF file with mutations (column 1, 2, 4 and 5 are used).')
-    group.add_argument('--mut-ids',
+    mutations_input_group.add_argument('--mut-ids',
                        dest='mut_ids_filename',
                        action='store',
                        type=str,
@@ -505,7 +505,7 @@ def main():
                             'chr10__100038800__TTTTTG__T__DEL '
                             'chr10__10011659__A__AAT__INS '
                             'chr10__100061062__C__T__SNV')
-    group.add_argument('--bedlike-mut-ids',
+    mutations_input_group.add_argument('--bedlike-mut-ids',
                        dest='bedlike_mut_ids_filename',
                        action='store',
                        type=str,
