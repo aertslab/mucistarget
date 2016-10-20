@@ -577,6 +577,12 @@ def main():
                         help='Minimum MotifLocator score threshold (default: {0:f}).'.format(
                             default_min_motiflocator_score_threshold)
                         )
+    parser.add_argument('--all-motifs',
+                        dest='all_motifs',
+                        action='store_true',
+                        required=False,
+                        help='Use all motifs instead of only directly annotated motifs.'
+                        )
     parser.add_argument('--mut2genes',
                         dest='mut_to_associated_genes_output_filename',
                         action='store',
@@ -650,8 +656,8 @@ def main():
          for tf in tfs_with_directly_annotated_motifs_set]
 
     if not args.motif_ids_filename and not args.tfs_filename:
-        # Use all motif IDs if --motifs and --tfs are not specified.
-        motif_ids_set = set(motifsinfo.MotifsInfo.motif_id_to_inclusive_filename_dict)
+        # Use all directly annotated motif IDs or all motif IDs (if all_motifs is True) if --motifs and --tfs are not specified.
+        motif_ids_set = motifsinfo.MotifsInfo.get_all_motif_ids(directly_annotated_motifs_only=not args.all_motifs)
 
     print('Get all mutations that overlap with the regulatory domains of {0:s}: '.format('the provided gene set'
                                                                                          if args.genes_filename
