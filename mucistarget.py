@@ -82,7 +82,7 @@ def read_tfs_filename(tfs_filename):
     return tfs_set
 
 
-def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set):
+def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set, keep_all_mutations=False):
     """
     Get all unique mutations that fall in a regulatory domain of one of the genes in the gene set.
 
@@ -94,6 +94,8 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
     :param genes_set:
         Set of genes which regulatory domains will be used to only keep those mutations that fall in those domains.
         If set to None, no filtering will be applied.
+    :param keep_all_mutations:
+        Keep also mutations that do not overlap with a regulatory domain, when set to True.
     :return:
         (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
          input_vcf_mut_ids,
@@ -138,6 +140,9 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
 
                 # Keep track of all associated genes for all mutations.
                 associated_genes_set.update(set(associated_genes_and_distance_to_tss_dict))
+            elif keep_all_mutations:
+                # Store the VCFmut object anyway, but without gene and TSS info, if keep_all_mutations is set to True.
+                vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut] = {'': ''}
 
     return (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
             input_vcf_mut_ids,
@@ -176,7 +181,7 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
             for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
                 print(vcf_mut,
                       associated_gene,
-                      '{0:+}'.format(distance_to_tss),
+                      '{0:+}'.format(distance_to_tss) if distance_to_tss != '' else '',
                       sep='\t',
                       file=mut_to_associated_genes_fh)
 
@@ -268,7 +273,7 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
 
                     print(vcf_mut,
                           associated_gene,
-                          '{0:+}'.format(distance_to_tss),
+                          '{0:+}'.format(distance_to_tss) if distance_to_tss != '' else '',
                           '\t'.join([motif_id,
                                      motifsinfo.MotifsInfo.get_motif_name(motif_id),
                                      ';'.join(tfs if tfs else ['']),
@@ -453,7 +458,7 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
                     print(vcf_mut,
                           associated_gene,
-                          '{0:+}'.format(distance_to_tss),
+                          '{0:+}'.format(distance_to_tss) if distance_to_tss != '' else '',
                           '\t'.join([motif_id,
                                      motifsinfo.MotifsInfo.get_motif_name(motif_id),
                                      ';'.join(tfs if tfs else ['']),
@@ -510,12 +515,19 @@ def main():
                             'chr10_10011659_10011660_--_AT_INS '
                             'chr10_100142677_100142678_T_-_INDEL '
                             'chr10_100061061_100061062_C_T_SNP')
-    parser.add_argument('--genes',
+    filter_output_group = parser.add_mutually_exclusive_group(required=False)
+    filter_output_group.add_argument('--genes',
                         dest='genes_filename',
                         action='store',
                         type=str,
                         required=False,
                         help='Filename with gene names to use as input.'
+                        )
+    filter_output_group.add_argument('--keep-all-mutations',
+                        dest='keep_all_mutations',
+                        action='store_true',
+                        required=False,
+                        help='Score all mutations, even if they do not overlap with regulatory domains of genes.'
                         )
     parser.add_argument('--motifs',
                         dest='motif_ids_filename',
@@ -653,14 +665,16 @@ def main():
         (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
          input_vcf_mut_ids,
          associated_genes_set
-         ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set)
+         ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set, args.keep_all_mutations)
     except ValueError as e:
         print('\nInvalid mutation: ' + e.message,
               file=log_fh)
         sys.exit(1)
 
     stats_dict['nbr_of_input_mutations'] = len(input_vcf_mut_ids)
-    stats_dict['nbr_of_mutations_associated_with_genes'] = len(vcf_mut_to_associated_genes_and_distance_to_tss_dict)
+    stats_dict['nbr_of_mutations_associated_with_genes'] = len(
+        list(filter(None, vcf_mut_to_associated_genes_and_distance_to_tss_dict.values()))
+    )
     stats_dict['nbr_of_genes_associated_with_mutations'] = len(associated_genes_set)
 
     mut_to_associated_genes_end_time = time.time()
