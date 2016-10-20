@@ -489,115 +489,160 @@ def main():
         description='Calculate the impact of mutations on the removal or introduction of TF binding sites.'
     )
 
-    mutations_input_group = parser.add_mutually_exclusive_group(required=True)
-    mutations_input_group.add_argument('--vcf',
-                       dest='vcf_filename',
-                       action='store',
-                       type=str,
-                       required=False,
-                       help='VCF file with mutations (column 1, 2, 4 and 5 are used).')
-    mutations_input_group.add_argument('--mut-ids',
-                       dest='mut_ids_filename',
-                       action='store',
-                       type=str,
-                       required=False,
-                       help='File with mutation IDs: '
-                            'chr10__100038800__TTTTTG__T__DEL '
-                            'chr10__10011659__A__AAT__INS '
-                            'chr10__100061062__C__T__SNV')
-    mutations_input_group.add_argument('--bedlike-mut-ids',
-                       dest='bedlike_mut_ids_filename',
-                       action='store',
-                       type=str,
-                       required=False,
-                       help='File with BED-like mutation IDs: '
-                            'chr10_100038800_100038801_TTTTG_-----_DEL '
-                            'chr10_10011659_10011660_--_AT_INS '
-                            'chr10_100142677_100142678_T_-_INDEL '
-                            'chr10_100061061_100061062_C_T_SNP')
-    filter_output_group = parser.add_mutually_exclusive_group(required=False)
-    filter_output_group.add_argument('--genes',
-                        dest='genes_filename',
-                        action='store',
-                        type=str,
-                        required=False,
-                        help='Filename with gene names to use as input.'
-                        )
-    filter_output_group.add_argument('--keep-all-mutations',
-                        dest='keep_all_mutations',
-                        action='store_true',
-                        required=False,
-                        help='Score all mutations, even if they do not overlap with regulatory domains of genes.'
-                        )
-    parser.add_argument('--motifs',
-                        dest='motif_ids_filename',
-                        action='store',
-                        type=str,
-                        required=False,
-                        help='Filename with motif IDs to score. If not specified and --tfs is also not specified, '
-                             'scores with all motifs.'
-                        )
-    parser.add_argument('--tfs',
-                        dest='tfs_filename',
-                        action='store',
-                        type=str,
-                        required=False,
-                        help='Filename with TFs for which directly annotated motif IDs will be scored. If not '
-                             'specified and --motifs is also not specified, scores with all motifs.'
-                        )
-    parser.add_argument('--clusterbuster',
-                        dest='clusterbuster_output_filename',
-                        action='store',
-                        type=str,
-                        required=False,
-                        help='Filename to which the Cluster-Buster CRM and motif delta score output will be written.'
-                        )
-    parser.add_argument('--motiflocator',
-                        dest='motiflocator_output_filename',
-                        action='store',
-                        type=str,
-                        required=False,
-                        help='Filename to which the MotifLocator delta score output will be written.'
-                        )
-    parser.add_argument('--min-clusterbuster-crm-score-threshold',
-                        dest='min_clusterbuster_crm_score_threshold',
-                        action='store',
-                        type=float,
-                        required=False,
-                        default=default_min_clusterbuster_crm_score_threshold,
-                        help='Minimum Cluster-Buster CRM score threshold (default: {0:f}).'.format(
-                            default_min_clusterbuster_crm_score_threshold)
-                        )
-    parser.add_argument('--min-motiflocator-score-threshold',
-                        dest='min_motiflocator_score_threshold',
-                        action='store',
-                        type=float,
-                        required=False,
-                        default=default_min_motiflocator_score_threshold,
-                        help='Minimum MotifLocator score threshold (default: {0:f}).'.format(
-                            default_min_motiflocator_score_threshold)
-                        )
-    parser.add_argument('--all-motifs',
-                        dest='all_motifs',
-                        action='store_true',
-                        required=False,
-                        help='Use all motifs instead of only directly annotated motifs.'
-                        )
-    parser.add_argument('--mut2genes',
-                        dest='mut_to_associated_genes_output_filename',
-                        action='store',
-                        type=str,
-                        required=False,
-                        help='TSV output file with mutation info and associated gene name and distance of mutation to '
-                             'TSS.'
-                        )
-    parser.add_argument('--log',
-                        dest='log_output_filename',
-                        action='store',
-                        type=str,
-                        required=False,
-                        help='Write the progress and statistics to a log file instead of standard error.'
-                        )
+    mutations_input_group =parser.add_argument_group(
+        title='Mutations',
+        description='Specify mutation format of the mutations which will be scored.'
+    )
+    mutations_input_exclusive_group = mutations_input_group.add_mutually_exclusive_group(required=True)
+    mutations_input_exclusive_group.add_argument(
+        '--vcf',
+        dest='vcf_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='VCF file with mutations (column 1, 2, 4 and 5 are used).'
+    )
+    mutations_input_exclusive_group.add_argument(
+        '--mut-ids',
+        dest='mut_ids_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='File with mutation IDs: '
+             'chr10__100038800__TTTTTG__T__DEL '
+             'chr10__10011659__A__AAT__INS '
+             'chr10__100061062__C__T__SNV'
+    )
+    mutations_input_exclusive_group.add_argument(
+        '--bedlike-mut-ids',
+        dest='bedlike_mut_ids_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='File with BED-like mutation IDs: '
+             'chr10_100038800_100038801_TTTTG_-----_DEL '
+             'chr10_10011659_10011660_--_AT_INS '
+             'chr10_100142677_100142678_T_-_INDEL '
+             'chr10_100061061_100061062_C_T_SNP'
+    )
+
+    filter_output_group = parser.add_argument_group(
+        title='Filter mutations',
+        description='Specify if mutations should be filtered out if they are not in a regulatory domain of a gene.'
+    )
+    filter_output_exclusive_group = filter_output_group.add_mutually_exclusive_group(required=False)
+    filter_output_exclusive_group.add_argument(
+        '--genes',
+        dest='genes_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='Filename with gene names to use as input. Only mutations in regulatory domains of those genes are scored.'
+    )
+    filter_output_exclusive_group.add_argument(
+        '--keep-all-mutations',
+        dest='keep_all_mutations',
+        action='store_true',
+        required=False,
+        help='Score all mutations, even if they do not overlap with regulatory domains of genes.'
+    )
+
+    motifs_group = parser.add_argument_group(
+        title='Motifs',
+        description='Specify which motifs will be used for scoring the mutations.'
+    )
+    motifs_group.add_argument(
+        '--motifs',
+        dest='motif_ids_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='Filename with motif IDs to score. If not specified and --tfs is also not specified, '
+             'scores with all directly annotated motifs.'
+    )
+    motifs_group.add_argument(
+        '--tfs',
+        dest='tfs_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='Filename with TFs for which directly annotated motif IDs will be scored. If not '
+             'specified and --motifs is also not specified, scores with all directly annotated motifs.'
+    )
+    motifs_group.add_argument(
+        '--all-motifs',
+        dest='all_motifs',
+        action='store_true',
+        required=False,
+        help='Use all motifs instead of only directly annotated motifs, if --motifs and --tfs are not specified.'
+    )
+
+    mutation_scoring_group = parser.add_argument_group(
+        title='Mutation scoring methods',
+        description='Specify which mutation scoring method should be used.'
+    )
+    mutation_scoring_group.add_argument(
+        '--clusterbuster',
+        dest='clusterbuster_output_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='Filename to which the Cluster-Buster CRM and motif delta score output will be written.'
+    )
+    mutation_scoring_group.add_argument(
+        '--motiflocator',
+        dest='motiflocator_output_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='Filename to which the MotifLocator delta score output will be written.'
+    )
+    mutation_scoring_group.add_argument(
+        '--min-clusterbuster-crm-score-threshold',
+        dest='min_clusterbuster_crm_score_threshold',
+        action='store',
+        type=float,
+        required=False,
+        default=default_min_clusterbuster_crm_score_threshold,
+        help='Minimum Cluster-Buster CRM score threshold (default: {0:f}).'.format(
+            default_min_clusterbuster_crm_score_threshold)
+    )
+    mutation_scoring_group.add_argument(
+        '--min-motiflocator-score-threshold',
+        dest='min_motiflocator_score_threshold',
+        action='store',
+        type=float,
+        required=False,
+        default=default_min_motiflocator_score_threshold,
+        help='Minimum MotifLocator score threshold (default: {0:f}).'.format(
+            default_min_motiflocator_score_threshold)
+    )
+
+    mut2genes_group = parser.add_argument_group(
+        title='Mutations to gene mapping',
+        description='Save mutations to gene mapping.'
+    )
+    mut2genes_group.add_argument(
+        '--mut2genes',
+        dest='mut_to_associated_genes_output_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='TSV output file with mutation info and associated gene name and distance of mutation to TSS.'
+    )
+
+    logging_group = parser.add_argument_group(
+        title='Logging',
+        description='Specify progress logging and some statistics.'
+    )
+    logging_group.add_argument(
+        '--log',
+        dest='log_output_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='Write the progress and statistics to a log file instead of standard error.'
+    )
 
     args = parser.parse_args()
 
