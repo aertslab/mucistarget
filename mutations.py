@@ -13,10 +13,28 @@ import pyfasta
 
 import create_regulatory_domains
 
-fasta_filename = os.path.join(os.path.dirname(__file__),
-                              'data',
-                              'genomic_fasta',
-                              'Homo_sapiens_assembly19_sorted.fasta')
+fasta_filename = os.path.join(
+    os.path.dirname(__file__),
+    'data',
+    'genomic_fasta',
+    'Homo_sapiens_assembly19_sorted.fasta'
+)
+
+# From http://compbio.med.harvard.edu/modencode/webpage/hic/hESC_domains_hg19.bed
+tads_of_hESC_filename = os.path.join(
+    os.path.dirname(__file__),
+    'data',
+    'tads',
+    'hESC_domains_hg19.bed'
+)
+
+# From http://compbio.med.harvard.edu/modencode/webpage/hic/IMR90_domains_hg19.bed
+tads_of_IMR90_filename = os.path.join(
+    os.path.dirname(__file__),
+    'data',
+    'tads',
+    'IMR90_domains_hg19.bed'
+)
 
 
 class GenomicFasta:
@@ -46,6 +64,39 @@ class GenomicFasta:
         :return: Chromosome size (or 0 if chromsome name was not found).
         """
         return GenomicFasta.chrom_sizes_dict.get(chrom, 0)
+
+
+class TADs:
+    @staticmethod
+    def get_tads_from_filename(tads_filename):
+        """
+        Load TADs from a file and store start and end position of each TAD in a per chromosome numpy array.
+
+        :param tads_filename: BED file with TADs
+        :return: Dictionary with chromosome names as keys and a numpy array with start and end coordinates as values.
+        """
+        tads_chrom_pos_dict = dict()
+
+        with open(tads_filename, 'r') as fh_tads:
+            for line in fh_tads:
+                columns = line.rstrip('\n').split('\t')
+
+                if len(columns) == 3:
+                    # Set chromosom name as key and start and end as value.
+                    tads_chrom_pos_dict.setdefault(columns[0], []).append([int(columns[1]), int(columns[2])])
+
+        # Store start and end position of each TAD in a per chromosome numpy array.
+        tads_start_end_array_per_chrom = {
+            chrom: numpy.array(
+                [
+                    [region[0], region[1]]
+                    for region in regions
+                    ]
+            )
+            for chrom, regions in tads_chrom_pos_dict.iteritems()
+            }
+
+        return tads_start_end_array_per_chrom
 
 
 class VCFmut:
@@ -85,6 +136,11 @@ class VCFmut:
         )
         for chrom, reg_doms in reg_doms_list_per_chrom.iteritems()
     }
+
+    # Load TADs from a file and store start and end position of each TAD in a per chromosome numpy array.
+    tads_start_end_array_per_chrom_for_cell_lines = dict()
+    tads_start_end_array_per_chrom_for_cell_lines['hESC'] = TADs.get_tads_from_filename(tads_of_hESC_filename)
+    tads_start_end_array_per_chrom_for_cell_lines['IMR90'] = TADs.get_tads_from_filename(tads_of_IMR90_filename)
 
     @staticmethod
     def from_mut_id(mut_id):
@@ -499,6 +555,37 @@ class VCFmut:
                  ).tolist()
             )
         )
+
+    def in_tads(self, cell_line):
+        """
+        Check if mutations falls in a TAD for a specific cell line.
+
+        :param cell_line: Use TADs for this cell line: "hESC" or "IMR90".
+
+        :return: True or False
+        """
+
+        if cell_line not in VCFmut.tads_start_end_array_per_chrom_for_cell_lines:
+            raise ValueError(
+                'Unsupported cell line "{0:S}".'.format(cell_line)
+            )
+
+        # Create a boolean array for the TADs located on the same chromosome as on which the mutation is
+        # located ( = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom] ) and
+        # for which which their interval contains the mutation start position:
+        #   - The start position of a TAD
+        #     ( = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 0] )
+        #     is lower than or equal to the mutation position.
+        #   - The end position of a TAD
+        #     ( = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 1] )
+        #     is greater than or equal to the mutation position.
+        #
+        # If there was any overlap between a TAD and the mutation, return True, else False.
+        return numpy.any(
+                (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 0] <= self.start)
+                &
+                (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 1] >= self.start)
+            )
 
     def get_reference_sequence_at_vcfmut(self):
         """
