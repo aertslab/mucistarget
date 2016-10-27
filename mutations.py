@@ -82,8 +82,8 @@ class TADs:
                 columns = line.rstrip('\n').split('\t')
 
                 if len(columns) == 3:
-                    # Set chromosom name as key and start and end as value.
-                    tads_chrom_pos_dict.setdefault(columns[0], []).append([int(columns[1]), int(columns[2])])
+                    # Set chromosome name as key and start (add 1 as it is in BED format) and end as value.
+                    tads_chrom_pos_dict.setdefault(columns[0], []).append([int(columns[1]) + 1, int(columns[2])])
 
         # Store start and end position of each TAD in a per chromosome numpy array.
         tads_start_end_array_per_chrom = {
