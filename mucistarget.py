@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 Purpose :      Calculate the impact of mutations on the removal or introduction of TF binding sites.
@@ -667,7 +668,7 @@ def main():
 
     print('\nCommandline:\n------------\n\n{0:s}\n\n'.format(' '.join(sys.argv)), file=log_fh)
 
-    print('mutCisTarget:\n-------------\n', file=log_fh)
+    print('μ-cisTarget:\n-------------\n', file=log_fh)
     print('Import motifsinfo ...', file=log_fh)
     import motifsinfo
     print('Import mutations ...\n', file=log_fh)
