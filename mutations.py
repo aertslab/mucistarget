@@ -514,11 +514,11 @@ class VCFmut:
         """
         return self.chrom, self.start - 1, self.start, self.mut_id
 
-    def get_associated_genes_and_distance_to_tss(self):
+    def get_associated_genes_and_distance_to_tss_and_tss(self):
         """
-        Get gene names which regulatory domains contain the mutation and the distance of the mutation to the TSS.
+        Get gene names which regulatory domains contain the mutation and the distance of the mutation to the TSS and TSS.
 
-        :return: dictionary of gene names as keys and distance to the TSS as values.
+        :return: dictionary of gene names as keys and distance to the TSS and TSS as values.
         """
 
         # Create a boolean array for the regulatory regions located on the same chromosome as on which the mutation is
@@ -540,34 +540,40 @@ class VCFmut:
         # Return a dictionary with:
         #   - Keys: All associated genes.
         #   - Values:
-        #       Calculate distance of mutation to TSS of the associated genes:
-        #         = (mutation_start_position - tss) * strand
-        #       Where:
-        #         - mutation_start_position: self.start
-        #         - tss: VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 2]
-        #         - strand: VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 3]
+        #       - Calculate distance of mutation to TSS of the associated genes:
+        #           = (mutation_start_position - tss) * strand
+        #         Where:
+        #           - mutation_start_position: self.start
+        #           - tss: VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 2]
+        #           - strand: VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 3]
+        #       - TSS:
+        #           - tss: VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 2]
         return dict(
             zip(
                 VCFmut.reg_doms_genes_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array].tolist(),
-                ((self.start
-                  - VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 2])
-                  * VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 3]
-                 ).tolist()
+                numpy.append(
+                    (self.start
+                     - VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 2])
+                    * VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 3],
+                    VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom][mutation_overlapping_with_reg_doms_array][:, 2],
+                ).reshape([2, -1]).transpose().tolist()
             )
         )
 
-    def in_tads(self, cell_line):
+    def tss_of_associated_gene_in_same_tad_as_mutation(self, cell_line, tss):
         """
-        Check if mutations falls in a TAD for a specific cell line.
+        Check if mutations falls in a TAD for a specific cell line and that the TSS of the associated gene falls in the
+        same TAD.
 
         :param cell_line: Use TADs for this cell line: "hESC" or "IMR90".
+        :param tss: TSS of associated gene.
 
         :return: True or False
         """
 
         if cell_line not in VCFmut.tads_start_end_array_per_chrom_for_cell_lines:
             raise ValueError(
-                'Unsupported cell line "{0:S}".'.format(cell_line)
+                'Unsupported cell line "{0:s}".'.format(cell_line)
             )
 
         # Create a boolean array for the TADs located on the same chromosome as on which the mutation is
@@ -579,12 +585,34 @@ class VCFmut:
         #   - The end position of a TAD
         #     ( = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 1] )
         #     is greater than or equal to the mutation position.
-        #
-        # If there was any overlap between a TAD and the mutation, return True, else False.
-        return numpy.any(
-                (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 0] <= self.start)
-                &
-                (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 1] >= self.start)
+
+        # If there was any overlap between a TAD and the mutation, return the TAD.
+        mutation_in_which_tad = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][
+            (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 0] <= self.start)
+            &
+            (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 1] >= self.start)
+        ]
+
+        # If there was any overlap between a TAD and the TSS of the associated gene, return the TAD.
+        tss_of_gene_in_which_tad = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][
+            (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 0] <= tss)
+            &
+            (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 1] >= tss)
+        ]
+
+        if numpy.shape(mutation_in_which_tad) == (1, 2) and numpy.shape(tss_of_gene_in_which_tad) == (1, 2):
+            # If both the mutation and the TSS of the associated gene are in a TAD, check if it is the same TAD or not.
+            return numpy.all(mutation_in_which_tad == tss_of_gene_in_which_tad)
+        elif numpy.shape(mutation_in_which_tad) == (0, 2) or numpy.shape(tss_of_gene_in_which_tad) == (0, 2):
+            # If the mutation or the TSS of the associated gene is not in a TAD, return False.
+            return False
+        else:
+            raise ValueError(
+                'Mutation "{0:s}" or TSS ({1:d}) overlaps multiple TADs in cell line "{2:s}", which is unsupported.'.format(
+                    self.mut_id,
+                    tss,
+                    cell_line
+                )
             )
 
     def get_reference_sequence_at_vcfmut(self):

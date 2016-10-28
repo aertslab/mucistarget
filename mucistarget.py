@@ -98,13 +98,13 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
     :param keep_all_mutations:
         Keep also mutations that do not overlap with a regulatory domain, when set to True.
     :return:
-        (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+        (vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
          input_vcf_mut_ids,
          associated_genes_set)
 
-        Where vcf_mut_to_associated_genes_and_distance_to_tss_dict:
+        Where vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict:
             OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
-            mutation to the TSS as values.
+            mutation to the TSS and TSS as values.
         Where input_vcf_mut_ids:
             unique mutation IDs in the vcf_mut_iterator.
         Where associated_genes_set:
@@ -113,7 +113,7 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
     """
 
     input_vcf_mut_ids = set()
-    vcf_mut_to_associated_genes_and_distance_to_tss_dict = OrderedDict()
+    vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict = OrderedDict()
     associated_genes_set = set()
 
     for vcf_mut in vcf_mut_iterator:
@@ -121,45 +121,45 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
             # Store all unique mutation IDs.
             input_vcf_mut_ids.add(vcf_mut.mut_id)
 
-            associated_genes_and_distance_to_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss()
+            associated_genes_and_distance_to_tss_and_tss_dict = vcf_mut.get_associated_genes_and_distance_to_tss_and_tss()
 
             if genes_set:
                 # If a set of genes was provided, only keep those associated genes for the mutation that appear in this
                 # set of genes.
-                associated_genes_and_distance_to_tss_dict = (
-                    {associated_genes_and_distance_to_tss_key: associated_genes_and_distance_to_tss_dict[
-                        associated_genes_and_distance_to_tss_key]
-                     for associated_genes_and_distance_to_tss_key in associated_genes_and_distance_to_tss_dict
-                     if associated_genes_and_distance_to_tss_key in genes_set
+                associated_genes_and_distance_to_tss_and_tss_dict = (
+                    {associated_genes_and_distance_to_tss_and_tss_key: associated_genes_and_distance_to_tss_and_tss_dict[
+                        associated_genes_and_distance_to_tss_and_tss_key]
+                     for associated_genes_and_distance_to_tss_and_tss_key in associated_genes_and_distance_to_tss_and_tss_dict
+                     if associated_genes_and_distance_to_tss_and_tss_key in genes_set
                      }
                 )
 
-            if associated_genes_and_distance_to_tss_dict:
+            if associated_genes_and_distance_to_tss_and_tss_dict:
                 # Store all mutations (VCFmut object) and associated genes information in a ordered dict.
-                vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut] \
-                    = associated_genes_and_distance_to_tss_dict
+                vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict[vcf_mut] \
+                    = associated_genes_and_distance_to_tss_and_tss_dict
 
                 # Keep track of all associated genes for all mutations.
-                associated_genes_set.update(set(associated_genes_and_distance_to_tss_dict))
+                associated_genes_set.update(set(associated_genes_and_distance_to_tss_and_tss_dict))
             elif keep_all_mutations:
                 # Store the VCFmut object anyway, but without gene and TSS info, if keep_all_mutations is set to True.
-                vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut] = {'': ''}
+                vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict[vcf_mut] = {'': [None, None]}
 
-    return (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+    return (vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
             input_vcf_mut_ids,
             associated_genes_set)
 
 
 def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
-                                        vcf_mut_to_associated_genes_and_distance_to_tss_dict):
+                                        vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict):
     """
     Write all mutations and their associated genes and distance of the mutation to the TSS to a file.
 
     :param mut_to_associated_genes_output_filename:
         Output filename which will contain mutation info and associated genes info.
-    :param vcf_mut_to_associated_genes_and_distance_to_tss_dict:
+    :param vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict:
         OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
-        mutation to the TSS as values.
+        mutation to the TSS and TSS as values.
         This dictionary can be made with get_all_mutations_that_overlap_with_regdoms_of_genes.
     :return:
     """
@@ -179,19 +179,26 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
               sep='\t',
               file=mut_to_associated_genes_fh)
 
-        for vcf_mut, associated_genes_and_distance_to_tss_dict in vcf_mut_to_associated_genes_and_distance_to_tss_dict.iteritems():
+        for vcf_mut, associated_genes_and_distance_to_tss_and_tss_dict in vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict.iteritems():
             # Write to the output file.
-            for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
+            for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.iteritems():
+                distance_to_tss, tss = distance_to_tss_and_tss
+
+                mutation_and_tss_in_same_tad_in_hESC = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                    cell_line='hESC', tss=tss)
+                mutation_and_tss_in_same_tad_in_IMR90 = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                    cell_line='IMR90', tss=tss)
+
                 print(vcf_mut,
                       associated_gene,
-                      '{0:+}'.format(distance_to_tss) if distance_to_tss != '' else '',
-                      'yes' if vcf_mut.in_tads('hESC') else 'no',
-                      'yes' if vcf_mut.in_tads('IMR90') else 'no',
+                      '{0:+}'.format(distance_to_tss) if distance_to_tss else '',
+                      'yes' if mutation_and_tss_in_same_tad_in_hESC else 'no',
+                      'yes' if mutation_and_tss_in_same_tad_in_IMR90 else 'no',
                       sep='\t',
                       file=mut_to_associated_genes_fh)
 
 
-def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
                                                                  motif_ids_set,
                                                                  clusterbuster_output_filename,
                                                                  min_clusterbuster_crm_score_threshold,
@@ -200,9 +207,9 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
     Calculate the MotifLocator scores for the wildtype and mutant FASTA sequence for each mutation and for each motif
     and write the result to a file.
 
-    :param vcf_mut_to_associated_genes_and_distance_to_tss_dict:
+    :param vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict:
         OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
-        mutation to the TSS as values.
+        mutation to the TSS and TSS as values.
         This dictionary can be made with get_all_mutations_that_overlap_with_regdoms_of_genes.
     :param motif_ids_set:
         set of motif IDs
@@ -264,25 +271,32 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
 
             clusterbuster_delta_scores = \
                 clusterbuster.calculate_clusterbuster_delta_scores(
-                    vcf_muts=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+                    vcf_muts=vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
                     motif_id=motif_id,
                     min_crm_score_threshold=min_clusterbuster_crm_score_threshold
             )
 
             # Write to the output file.
             for vcf_mut, clusterbuster_delta_score in clusterbuster_delta_scores.iteritems():
-                associated_genes_and_distance_to_tss_dict = vcf_mut_to_associated_genes_and_distance_to_tss_dict[vcf_mut]
+                associated_genes_and_distance_to_tss_and_tss_dict = vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict[vcf_mut]
 
-                for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
+                for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.iteritems():
                     vcf_mut_ids_passing_clusterbuster_crm_score_threshold.add(vcf_mut.mut_id)
 
                     tfs = motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)
 
+                    distance_to_tss, tss = distance_to_tss_and_tss
+
+                    mutation_and_tss_in_same_tad_in_hESC = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                        cell_line='hESC', tss=tss)
+                    mutation_and_tss_in_same_tad_in_IMR90 = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                        cell_line='IMR90', tss=tss)
+
                     print(vcf_mut,
                           associated_gene,
-                          '{0:+}'.format(distance_to_tss) if distance_to_tss != '' else '',
-                          'yes' if vcf_mut.in_tads('hESC') else 'no',
-                          'yes' if vcf_mut.in_tads('IMR90') else 'no',
+                          '{0:+}'.format(distance_to_tss) if distance_to_tss else '',
+                          'yes' if mutation_and_tss_in_same_tad_in_hESC else 'no',
+                          'yes' if mutation_and_tss_in_same_tad_in_IMR90 else 'no',
                           '\t'.join([motif_id,
                                      motifsinfo.MotifsInfo.get_motif_name(motif_id),
                                      ';'.join(tfs if tfs else ['']),
@@ -314,7 +328,7 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
     return nbr_of_mutations_which_pass_clusterbuster_crm_score_threshold
 
 
-def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
                                                   motif_ids_set,
                                                   motiflocator_output_filename,
                                                   min_motiflocator_score_threshold,
@@ -323,9 +337,9 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
     Calculate the MotifLocator scores for the wildtype and mutant FASTA sequence for each mutation and for each motif
     and write the result to a file.
 
-    :param vcf_mut_to_associated_genes_and_distance_to_tss_dict:
+    :param vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict:
         OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
-        mutation to the TSS as values.
+        mutation to the TSS and TSS as values.
         This dictionary can be made with get_all_mutations_that_overlap_with_regdoms_of_genes.
     :param motif_ids_set:
         set of motif IDs
@@ -429,10 +443,10 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
               sep='\t',
               file=motiflocator_output_fh)
 
-        nbr_mutations = len(vcf_mut_to_associated_genes_and_distance_to_tss_dict)
+        nbr_mutations = len(vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict)
 
-        for mutation_idx, (vcf_mut, associated_genes_and_distance_to_tss_dict) in enumerate(
-                vcf_mut_to_associated_genes_and_distance_to_tss_dict.iteritems()):
+        for mutation_idx, (vcf_mut, associated_genes_and_distance_to_tss_and_tss_dict) in enumerate(
+                vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict.iteritems()):
             print('  Scoring mutation "{0:s}" ({1:d} of {2:d}) with MotifLocator: '.format(vcf_mut.mut_id,
                                                                                            mutation_idx + 1,
                                                                                            nbr_mutations),
@@ -464,14 +478,21 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
             # Write to the output file.
             for motif_id, motiflocator_delta in motiflocator_delta_scores.iteritems():
-                for associated_gene, distance_to_tss in associated_genes_and_distance_to_tss_dict.iteritems():
+                for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.iteritems():
                     tfs = motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)
+
+                    distance_to_tss, tss = distance_to_tss_and_tss
+
+                    mutation_and_tss_in_same_tad_in_hESC = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                        cell_line='hESC', tss=tss)
+                    mutation_and_tss_in_same_tad_in_IMR90 = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                        cell_line='IMR90', tss=tss)
 
                     print(vcf_mut,
                           associated_gene,
-                          '{0:+}'.format(distance_to_tss) if distance_to_tss != '' else '',
-                          'yes' if vcf_mut.in_tads('hESC') else 'no',
-                          'yes' if vcf_mut.in_tads('IMR90') else 'no',
+                          '{0:+}'.format(distance_to_tss) if distance_to_tss else '',
+                          'yes' if mutation_and_tss_in_same_tad_in_hESC else 'no',
+                          'yes' if mutation_and_tss_in_same_tad_in_IMR90 else 'no',
                           '\t'.join([motif_id,
                                      motifsinfo.MotifsInfo.get_motif_name(motif_id),
                                      ';'.join(tfs if tfs else ['']),
@@ -726,7 +747,7 @@ def main():
     mut_to_associated_genes_start_time = time.time()
 
     try:
-        (vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+        (vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
          input_vcf_mut_ids,
          associated_genes_set
          ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set, args.keep_all_mutations)
@@ -737,7 +758,7 @@ def main():
 
     stats_dict['nbr_of_input_mutations'] = len(input_vcf_mut_ids)
     stats_dict['nbr_of_mutations_associated_with_genes'] = len(
-        list(filter(None, vcf_mut_to_associated_genes_and_distance_to_tss_dict.values()))
+        list(filter(None, vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict.values()))
     )
     stats_dict['nbr_of_genes_associated_with_mutations'] = len(associated_genes_set)
 
@@ -750,7 +771,7 @@ def main():
         # Write all mutations and their associated genes and distance of the mutation to the TSS to a file.
         write_mut_to_associated_gene_output(
             mut_to_associated_genes_output_filename=args.mut_to_associated_genes_output_filename,
-            vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict
+            vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict
         )
 
     if args.clusterbuster_output_filename:
@@ -758,7 +779,7 @@ def main():
         # mutation and for each motif and write the result to a file.
         stats_dict['nbr_of_mutations_which_pass_clusterbuster_crm_score_threshold'] = \
             calculate_and_write_clusterbuster_crm_and_motif_delta_scores(
-                vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+                vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
                 motif_ids_set=motif_ids_set,
                 clusterbuster_output_filename=args.clusterbuster_output_filename,
                 min_clusterbuster_crm_score_threshold=args.min_clusterbuster_crm_score_threshold,
@@ -770,7 +791,7 @@ def main():
         # motif and write the result to a file.
         stats_dict['nbr_of_mutations_which_pass_motiflocator_threshold'] = \
             calculate_and_write_motiflocator_delta_scores(
-                vcf_mut_to_associated_genes_and_distance_to_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_dict,
+                vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
                 motif_ids_set=motif_ids_set,
                 motiflocator_output_filename=args.motiflocator_output_filename,
                 min_motiflocator_score_threshold=args.min_motiflocator_score_threshold,
