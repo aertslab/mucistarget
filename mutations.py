@@ -189,6 +189,50 @@ class VCFmut:
                 yield VCFmut.from_mut_id(mut_id)
 
     @staticmethod
+    def from_zero_based_no_ref_specified(chrom, start, ref, mut):
+        """
+        Create a VCFmut object from a mutation with zero-based coordinate and without start reference base specified.
+
+        Examples:
+            VCFmut.from_zero_based_no_ref_specified('chr10', '100038800', 'TTTTG', '')
+            VCFmut.from_zero_based_no_ref_specified('chr10', '100038800', 'TTTTG', '-')
+            VCFmut.from_zero_based_no_ref_specified('chr10', '100038800', 'TTTTG', '----')
+              ==> mut_id: chr10__100038800__tTTTTG__t__DEL
+
+            VCFmut.from_zero_based_no_ref_specified('chr10', '10011659', '', 'AT')
+            VCFmut.from_zero_based_no_ref_specified('chr10', '10011659', '-', 'AT')
+            VCFmut.from_zero_based_no_ref_specified('chr10', '10011659', '--', 'AT')
+              ==> mut_id: chr10__10011659__A__AAT__INS
+
+            VCFmut.from_zero_based_no_ref_specified('chr10', '100061061', 'C', 'T')
+              ==> mut_id: chr10__100061062__C__T__SNV
+
+        :param chrom: Chromosome name on which the mutation is located.
+        :param start: Start position of the mutation (zero-based coordinate).
+        :param ref: Reference sequence for the mutation (no start reference base for deletions and insertions).
+        :param mut: Mutation sequence for the mutation (no start reference base for deletions and insertions).
+        :return: VCFmut object.
+        """
+
+        try:
+            # Fix zero-based start coordinate position to one-based coordinate position.
+            start = int(start) + 1
+        except:
+            raise ValueError(
+                'Mutation position {0:s} is not an integer ({1:s} zero_based_no_ref_specified).'.format(
+                    str(start),
+                    chrom + '_' + str(start) + '_' + ref + '_' + mut
+                )
+            )
+
+        # Remove dashes for insertions.
+        ref = ref.replace('-', '')
+        # Remove dashes for deletions.
+        mut = mut.replace('-', '')
+
+        return VCFmut(chrom, start, ref, mut, no_ref_specified=True)
+
+    @staticmethod
     def from_bedlike_mut_id(bedlike_mut_id):
         """
         Create a VCFmut object from a BED-like mutation ID.
@@ -221,23 +265,7 @@ class VCFmut:
                 )
             )
 
-        try:
-            # Fix zero-based start coordinate position to one-based coordinate position.
-            start = int(start) + 1
-        except:
-            raise ValueError(
-                'Mutation position {0:s} is not an integer ({1:s}).'.format(
-                    str(start),
-                    bedlike_mut_id
-                )
-            )
-
-        # Remove dashes for insertions.
-        ref = ref.replace('-', '')
-        # Remove dashes for deletions.
-        mut = mut.replace('-', '')
-
-        return VCFmut(chrom, start, ref, mut, no_ref_specified=True)
+        return VCFmut.from_zero_based_no_ref_specified(chrom, start, ref, mut)
 
     @staticmethod
     def from_bedlike_mut_ids_file(bedlike_mut_ids_filename):
