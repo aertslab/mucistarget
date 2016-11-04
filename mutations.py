@@ -355,33 +355,6 @@ class VCFmut:
                 'Chromosome name "{0:s}" is not valid ({1:s}).'.format(chrom, self.mut_line)
             )
 
-        allowed_nucleotides = {'A', 'C', 'G', 'T', 'N'}
-
-        if not set(ref.upper()).issubset(allowed_nucleotides):
-            raise ValueError(
-                'Reference nucleotide(s) "{0:s}" contain(s) other characters than: A, C, G, T, or N ({1:s}).'.format(
-                    ref,
-                    self.mut_line
-                )
-            )
-
-        if not set(mut.upper()).issubset(allowed_nucleotides):
-            raise ValueError(
-                'Mutation nucleotide(s) "{0:s}" contain(s) other characters than: A, C, G, T, or N ({1:s}).'.format(
-                    mut,
-                    self.mut_line
-                )
-            )
-
-        ref_length = len(ref)
-        mut_length = len(mut)
-
-        if ref_length == 0:
-            raise ValueError('Reference nucleotide can not be empty ({0:s}).'.format(self.mut_line))
-
-        if mut_length == 0:
-            raise ValueError('Mutation nucleotide can not be empty ({0:s}).'.format(self.mut_line))
-
         self.chrom = chrom
 
         try:
@@ -391,26 +364,13 @@ class VCFmut:
                 'Mutation position {0:s} is not an integer ({1:s}).'.format(str(start), self.mut_line)
             )
 
-        if self.start == 0:
-            raise ValueError(
-                'Mutation positions are one-based and thus cannot be zero ({0:s}).'.format(self.mut_line)
-            )
-        elif self.start > GenomicFasta.chromosome_size(chrom):
-            raise ValueError(
-                'Mutation position {0:d} is higher than the chromosome length ({1:d}) '
-                'for chromosome "{2:s}" ({3:s}).'.format(self.start,
-                                                         GenomicFasta.chromosome_size(chrom),
-                                                         self.chrom,
-                                                         self.mut_line)
-            )
-
-        self.ref = ref
-        self.mut = mut
-
         self.snv = False
         self.mnv = False
         self.deletion = False
         self.insertion = False
+
+        ref_length = len(ref)
+        mut_length = len(mut)
 
         if ref_length == mut_length:
             if ref_length == 1:
@@ -429,6 +389,46 @@ class VCFmut:
             # Insertion.
             self.insertion = True
             self.mut_type = 'INS'
+
+        if self.start <= 0:
+            raise ValueError(
+                'Mutation positions are one-based and cannot be zero or lower ({0:s}).'.format(self.mut_line)
+            )
+        elif self.start > GenomicFasta.chromosome_size(chrom):
+            raise ValueError(
+                'Mutation position {0:d} is higher than the chromosome length ({1:d}) '
+                'for chromosome "{2:s}" ({3:s}).'.format(self.start,
+                                                         GenomicFasta.chromosome_size(chrom),
+                                                         self.chrom,
+                                                         self.mut_line)
+            )
+
+        if ref_length == 0:
+            raise ValueError('Reference nucleotide can not be empty ({0:s}).'.format(self.mut_line))
+
+        if mut_length == 0:
+            raise ValueError('Mutation nucleotide can not be empty ({0:s}).'.format(self.mut_line))
+
+        allowed_nucleotides = {'A', 'C', 'G', 'T', 'N'}
+
+        if not set(ref.upper()).issubset(allowed_nucleotides):
+            raise ValueError(
+                'Reference nucleotide(s) "{0:s}" contain(s) other characters than: A, C, G, T, or N ({1:s}).'.format(
+                    ref,
+                    self.mut_line
+                )
+            )
+
+        if not set(mut.upper()).issubset(allowed_nucleotides):
+            raise ValueError(
+                'Mutation nucleotide(s) "{0:s}" contain(s) other characters than: A, C, G, T, or N ({1:s}).'.format(
+                    mut,
+                    self.mut_line
+                )
+            )
+
+        self.ref = ref
+        self.mut = mut
 
         self.mut_id = '{0:s}__{1:d}__{2:s}__{3:s}__{4:s}'.format(
             self.chrom,
