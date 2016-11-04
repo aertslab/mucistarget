@@ -337,7 +337,7 @@ class VCFmut:
 
         return VCFmut(chrom, start, ref, mut), bp_upstream, bp_downstream, is_wt
 
-    def __init__(self, chrom, start, ref, mut):
+    def __init__(self, chrom, start, ref, mut, no_ref_specified=False):
         """
         Create a VCFmut object and do some checking to see if a valid mutation was provided.
 
@@ -345,10 +345,16 @@ class VCFmut:
         :param start: Start position of the mutation (1-based coordinate).
         :param ref: Reference sequence for the mutation.
         :param mut: Mutation sequence for the mutation.
+        :param no_ref_specified: Set to True, if deletions and insertions do not include
+                                 the reference base like specified in VCF format.
         :return:
         """
 
-        self.mut_line = '{0:s} {1:s} {2:s} {3:s}'.format(chrom, str(start), ref, mut)
+        self.mut_line = '{0:s} {1:s} {2:s} {3:s}{4:s}'.format(chrom,
+                                                              str(start),
+                                                              ref,
+                                                              mut,
+                                                              ' no_ref_specified' if no_ref_specified else '')
 
         if not GenomicFasta.is_chromosome_name(chrom):
             raise ValueError(
@@ -385,10 +391,18 @@ class VCFmut:
             # Deletion.
             self.deletion = True
             self.mut_type = 'DEL'
+
+            if no_ref_specified:
+                # Fix start position, if no_ref_specified is True. The reference base will be added later.
+                self.start -= 1
         elif ref_length < mut_length:
             # Insertion.
             self.insertion = True
             self.mut_type = 'INS'
+
+            if no_ref_specified:
+                # Fix start position, if no_ref_specified is True. The reference base will be added later.
+                self.start -= 1
 
         if self.start <= 0:
             raise ValueError(
@@ -402,6 +416,18 @@ class VCFmut:
                                                          self.chrom,
                                                          self.mut_line)
             )
+
+        if no_ref_specified:
+            if self.mut_type == 'DEL' or self.mut_type == 'INS':
+                # Add the reference base to the reference and mutation sequence for deletions and insertions
+                # if no_ref_specified is True. The start position is already corrected before.
+                ref_at_first_pos = VCFmut(chrom, self.start, 'N', 'N').get_reference_sequence_at_vcfmut()
+                ref = ref_at_first_pos + ref
+                mut = ref_at_first_pos + mut
+
+                # Update length of reference and mutation.
+                ref_length = len(ref)
+                mut_length = len(mut)
 
         if ref_length == 0:
             raise ValueError('Reference nucleotide can not be empty ({0:s}).'.format(self.mut_line))
