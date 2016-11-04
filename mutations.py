@@ -337,7 +337,7 @@ class VCFmut:
 
         return VCFmut(chrom, start, ref, mut), bp_upstream, bp_downstream, is_wt
 
-    def __init__(self, chrom, start, ref, mut, mut_id=None):
+    def __init__(self, chrom, start, ref, mut):
         """
         Create a VCFmut object and do some checking to see if a valid mutation was provided.
 
@@ -345,14 +345,10 @@ class VCFmut:
         :param start: Start position of the mutation (1-based coordinate).
         :param ref: Reference sequence for the mutation.
         :param mut: Mutation sequence for the mutation.
-        :param mut_id: Mutation ID (if not set, will be created by using the previous arguments.
         :return:
         """
 
-        if mut_id:
-            self.mut_line = '{0:s} {1:s} {2:s} {3:s} {4:s}'.format(chrom, str(start), mut_id, ref, mut)
-        else:
-            self.mut_line = '{0:s} {1:s} {2:s} {3:s}'.format(chrom, str(start), ref, mut)
+        self.mut_line = '{0:s} {1:s} {2:s} {3:s}'.format(chrom, str(start), ref, mut)
 
         if not GenomicFasta.is_chromosome_name(chrom):
             raise ValueError(
@@ -434,7 +430,7 @@ class VCFmut:
             self.insertion = True
             self.mut_type = 'INS'
 
-        self.mut_id = mut_id if mut_id else '{0:s}__{1:d}__{2:s}__{3:s}__{4:s}'.format(
+        self.mut_id = '{0:s}__{1:d}__{2:s}__{3:s}__{4:s}'.format(
             self.chrom,
             self.start,
             self.ref,
