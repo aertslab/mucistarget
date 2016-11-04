@@ -198,6 +198,12 @@ class VCFmut:
             chr10_10011659_10011660_--_AT_INS
             chr10_100142677_100142678_T_-_INDEL
             chr10_100061061_100061062_C_T_SNP
+            chr10_100038800_100038801_TTTTG_-----
+            chr10_100038800_100038801_TTTTG_-
+            chr10_10011659_10011660_--_AT
+            chr10_10011659_10011660_-_AT
+            chr10_100142677_100142678_T_-
+            chr10_100061061_100061062_C_T
 
         :param bedlike_mut_id: BED-like mutation ID.
         :return: VCFmut object.
@@ -207,7 +213,7 @@ class VCFmut:
             return None
 
         try:
-            chrom, _, start, ref, mut, mut_type = bedlike_mut_id.split('_')[0:6]
+            chrom, start, _, ref, mut = bedlike_mut_id.split('_')[0:5]
         except ValueError:
             raise ValueError(
                 'BED-like mutation ID "{0:s}" is not valid.'.format(
@@ -215,24 +221,23 @@ class VCFmut:
                 )
             )
 
-        if mut_type == 'DEL' or (mut_type == 'INDEL' and mut[0] == '-'):
-            # Fix start position and add additional start base for deletion and remove dashes.
-            start = int(start) - 1
-            ref = 'N' + ref
-            mut = 'N'
-            ref_at_first_pos = VCFmut(chrom, start, ref, mut).get_reference_sequence_at_vcfmut()[0]
-            ref = ref_at_first_pos + ref[1:]
-            mut = ref_at_first_pos
-        elif mut_type == 'INS' or (mut_type == 'INDEL' and ref[0] == '-'):
-            # Fix start position and add additional start base for insertion and remove dashes.
-            start = int(start) - 1
-            ref = 'N'
-            mut = 'N' + mut
-            ref_at_first_pos = VCFmut(chrom, start, ref, mut).get_reference_sequence_at_vcfmut()[0]
-            ref = ref_at_first_pos
-            mut = ref_at_first_pos + mut[1:]
+        try:
+            # Fix zero-based start coordinate position to one-based coordinate position.
+            start = int(start) + 1
+        except:
+            raise ValueError(
+                'Mutation position {0:s} is not an integer ({1:s}).'.format(
+                    str(start),
+                    bedlike_mut_id
+                )
+            )
 
-        return VCFmut(chrom, start, ref, mut)
+        # Remove dashes for insertions.
+        ref = ref.replace('-', '')
+        # Remove dashes for deletions.
+        mut = mut.replace('-', '')
+
+        return VCFmut(chrom, start, ref, mut, no_ref_specified=True)
 
     @staticmethod
     def from_bedlike_mut_ids_file(bedlike_mut_ids_filename):
