@@ -171,22 +171,39 @@ class VCFmut:
         return VCFmut(chrom, start, ref, mut)
 
     @staticmethod
-    def from_mut_ids_file(mut_ids_filename):
+    def from_mut_ids_file(mut_ids_filename, mut_ids_column=1, return_input_line=False):
         """
         Create VCFmut objects from a file which contains mutation IDs.
 
         :param mut_ids_filename: Filename which contains a list of mutation IDs.
-        :return: yield VCFmut objects for each mutation ID in the mut_ids_filename.
+        :param mut_ids_column: Column number which contains the mutation ID (default=1).
+        :param return_input_line: If set to True, also yield the input line for the mutation ID.
+        :return: yield VCFmut objects for each mutation ID in the mut_ids_filename, and input line for the mutation if
+                 return_input_line is set to True.
         """
 
         with open(mut_ids_filename, 'r') as mut_ids_fh:
             for line in mut_ids_fh:
-                mut_id = line.rstrip('\r\n')
+                line = line.rstrip('\r\n')
 
-                if mut_id.startswith('#'):
+                if line.startswith('#'):
                     continue
 
-                yield VCFmut.from_mut_id(mut_id)
+                columns = line.split('\t')
+
+                if mut_ids_column > len(columns):
+                    raise ValueError(
+                        'Mutation line "{0:s}" needs to contain at least {1:d} columns.'.format(
+                            line, mut_ids_column
+                        )
+                    )
+
+                mut_id = columns[mut_ids_column - 1]
+
+                if return_input_line:
+                    yield VCFmut.from_mut_id(mut_id), line
+                else:
+                    yield VCFmut.from_mut_id(mut_id)
 
     @staticmethod
     def from_zero_based_no_ref_specified(chrom, start, ref, mut):
@@ -268,22 +285,39 @@ class VCFmut:
         return VCFmut.from_zero_based_no_ref_specified(chrom, start, ref, mut)
 
     @staticmethod
-    def from_bedlike_mut_ids_file(bedlike_mut_ids_filename):
+    def from_bedlike_mut_ids_file(bedlike_mut_ids_filename, bedlike_mut_ids_column=1, return_input_line=False):
         """
         Create VCFmut objects from a file which contains BED-like mutation IDs.
 
         :param bedlike_mut_ids_filename: Filename which contains a list of BED-like mutation IDs.
-        :return: yield VCFmut objects for each mutation ID in the bedlike_mut_ids_filename.
+        :param bedlike_mut_ids_column: Column number which contains the BED-like mutation ID (default=1).
+        :param return_input_line: If set to True, also yield the input line for the BED-like mutation ID.
+        :return: yield VCFmut objects for each mutation ID in the bedlike_mut_ids_filename, and input line for the
+                 mutation if return_input_line is set to True.
         """
 
         with open(bedlike_mut_ids_filename, 'r') as bedlike_mut_ids_fh:
             for line in bedlike_mut_ids_fh:
-                bedlike_mut_id = line.rstrip('\r\n')
+                line = line.rstrip('\r\n')
 
-                if bedlike_mut_id.startswith('#'):
+                if line.startswith('#'):
                     continue
 
-                yield VCFmut.from_bedlike_mut_id(bedlike_mut_id)
+                columns = line.split('\t')
+
+                if bedlike_mut_ids_column > len(columns):
+                    raise ValueError(
+                        'BED-like mutation line "{0:s}" needs to contain at least {1:d} columns.'.format(
+                            line, bedlike_mut_ids_column
+                        )
+                    )
+
+                bedlike_mut_id = columns[bedlike_mut_ids_column - 1]
+
+                if return_input_line:
+                    yield VCFmut.from_bedlike_mut_id(bedlike_mut_id), line
+                else:
+                    yield VCFmut.from_bedlike_mut_id(bedlike_mut_id)
 
     @staticmethod
     def from_vcf_line(vcf_line):
@@ -309,12 +343,14 @@ class VCFmut:
         return VCFmut(chrom, start, ref, mut)
 
     @staticmethod
-    def from_vcf_file(vcf_filename):
+    def from_vcf_file(vcf_filename, return_input_line=False):
         """
         Create VCFmut objects from a VCF file.
 
         :param vcf_filename: VCF filename.
-        :return: yield a VCFmut object for each mutation in the VCF file.
+        :param return_input_line: If set to True, also yield the input line for the VCF mutation.
+        :return: yield a VCFmut object for each mutation in the VCF file, and input line for the mutation if
+                 return_input_line is set to True.
         """
 
         with open(vcf_filename, 'r') as vcf_fh:
@@ -322,7 +358,10 @@ class VCFmut:
                 if vcf_line.startswith('#'):
                     continue
 
-                yield VCFmut.from_vcf_line(vcf_line)
+                if return_input_line:
+                    yield VCFmut.from_vcf_line(vcf_line), vcf_line
+                else:
+                    yield VCFmut.from_vcf_line(vcf_line)
 
     @staticmethod
     def from_fasta_seq_id(fasta_seq_id):
