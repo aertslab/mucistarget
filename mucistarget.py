@@ -269,12 +269,17 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
 
             clusterbuster_start_time = time.time()
 
-            clusterbuster_delta_scores = \
-                clusterbuster.calculate_clusterbuster_delta_scores(
-                    vcf_muts=vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
-                    motif_id=motif_id,
-                    min_crm_score_threshold=min_clusterbuster_crm_score_threshold
-            )
+            try:
+                clusterbuster_delta_scores = \
+                    clusterbuster.calculate_clusterbuster_delta_scores(
+                        vcf_muts=vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
+                        motif_id=motif_id,
+                        min_crm_score_threshold=min_clusterbuster_crm_score_threshold
+                    )
+            except ValueError as e:
+                print('\n\n  Invalid mutation: ' + e.message + '\n',
+                      file=log_fh)
+                sys.exit(1)
 
             # Write to the output file.
             for vcf_mut, clusterbuster_delta_score in clusterbuster_delta_scores.iteritems():
@@ -458,13 +463,20 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
             motiflocator_delta_scores = dict()
 
             for filtered_inclusive_motifs_on_length_key in filtered_inclusive_motifs_on_length_keys:
+                try:
+                    fasta_string = vcf_mut.make_fasta_for_wt_and_mut(
+                        bp_upstream=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].bp_upstream,
+                        bp_downstream=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].bp_downstream
+                    )
+                except ValueError as e:
+                    print('\n\n  Invalid mutation: ' + e.message + '\n',
+                          file=log_fh)
+                    sys.exit(1)
+
                 # Score mutation with MotifLocator with settings provided in FilterMotifsOnLength() object.
                 motiflocator_delta_scores.update(
                     motiflocator.calculate_motiflocator_delta_scores(
-                        fasta_string=vcf_mut.make_fasta_for_wt_and_mut(
-                            bp_upstream=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].bp_upstream,
-                            bp_downstream=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].bp_downstream
-                        ),
+                        fasta_string=fasta_string,
                         inclusive_matrix_filename=filtered_inclusive_motifs_on_length_dict[filtered_inclusive_motifs_on_length_key].inclusive_matrix_fh.name,
                         min_score_threshold=min_motiflocator_score_threshold
                     )
@@ -752,7 +764,7 @@ def main():
          associated_genes_set
          ) = get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes_set, args.keep_all_mutations)
     except ValueError as e:
-        print('\nInvalid mutation: ' + e.message,
+        print('\nInvalid mutation: ' + e.message + '\n',
               file=log_fh)
         sys.exit(1)
 

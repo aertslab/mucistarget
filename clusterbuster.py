@@ -186,9 +186,12 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
     bp_extension_size = 500 + motif_length
 
     # Make wildtype and mutant FASTA sequence for each mutation.
-    fasta_string = '\n'.join([vcf_mut.make_fasta_for_wt_and_mut(bp_upstream=bp_extension_size,
-                                                                bp_downstream=bp_extension_size)
-                              for vcf_mut in vcf_muts]).encode('utf-8')
+    try:
+        fasta_string = '\n'.join([vcf_mut.make_fasta_for_wt_and_mut(bp_upstream=bp_extension_size,
+                                                                    bp_downstream=bp_extension_size)
+                                  for vcf_mut in vcf_muts]).encode('utf-8')
+    except ValueError as e:
+        raise e
 
     # Score wildtype and mutant FASTA sequence for each mutation with Cluster-Buster for a specific motif.
     clusterbuster_command = [clusterbuster_path,
