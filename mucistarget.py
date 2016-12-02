@@ -728,16 +728,40 @@ def main():
         print('Read gene list from "{0:s}" ...\n'.format(args.genes_filename), file=log_fh)
         genes_set = read_genes_filename(args.genes_filename)
 
+        if len(genes_set) == 0:
+            print('An empty gene list file was provided.\n', file=log_fh)
+            sys.exit(1)
+
     motif_ids_set = set()
 
     if args.motif_ids_filename:
         print('Read motif IDs from "{0:s}" ...\n'.format(args.motif_ids_filename), file=log_fh)
-        motif_ids_set.update(read_motif_ids_filename(args.motif_ids_filename))
+
+        motif_ids_set = read_motif_ids_filename(args.motif_ids_filename)
+
+        if len(motif_ids_set) == 0:
+            print('An empty motif IDs file was provided.\n', file=log_fh)
+            sys.exit(1)
+
+        all_motif_ids_set = motifsinfo.MotifsInfo.get_all_motif_ids(directly_annotated_motifs_only=False)
+
+        if not motif_ids_set.issubset(all_motif_ids_set):
+            print('The following motif IDs are not recognised:\n  - ',
+                  '\n  - '.join(motif_ids_set.difference(all_motif_ids_set)),
+                  '\n',
+                  sep='',
+                  file=log_fh)
+            sys.exit(1)
+
     if args.tfs_filename:
         print('Read TFs from "{0:s}" ...\n'.format(args.tfs_filename), file=log_fh)
         tfs_set = read_tfs_filename(args.tfs_filename)
 
         tfs_with_directly_annotated_motifs_set = {tf for tf in tfs_set if tf in motifsinfo.MotifsInfo.tf_to_motifs_dict}
+
+        if len(tfs_with_directly_annotated_motifs_set) == 0:
+            print('None of the provided TFs have directly annotated motifs.\n', file=log_fh)
+            sys.exit(1)
 
         stats_dict['nbr_of_input_tfs'] = len(tfs_set)
         stats_dict['nbr_of_input_tfs_with_directly_annotated_motifs'] = len(tfs_with_directly_annotated_motifs_set)
