@@ -4,7 +4,7 @@
 """
 Purpose :      Calculate the impact of mutations on the removal or introduction of TF binding sites.
 
-Copyright (C): 2016 - Gert Hulselmans
+Copyright (C): 2016-2017 - Gert Hulselmans
 """
 
 from __future__ import print_function
@@ -164,6 +164,8 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
     :return:
     """
 
+    import mutations
+
     with open(mut_to_associated_genes_output_filename, 'w') as mut_to_associated_genes_fh:
         # Write header to the output file.
         print('# chrom',
@@ -174,8 +176,10 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
               'mutation ID',
               'associated gene',
               'distance to TSS',
-              'in hESC TADs',
-              'in IMR90 TADs',
+              '\t'.join(['in ' + primary_tissue_or_cell_type + ' TADs'
+                         for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+                         ]
+                        ),
               sep='\t',
               file=mut_to_associated_genes_fh)
 
@@ -184,16 +188,19 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
             for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.iteritems():
                 distance_to_tss, tss = distance_to_tss_and_tss
 
-                mutation_and_tss_in_same_tad_in_hESC = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                    cell_line='hESC', tss=tss)
-                mutation_and_tss_in_same_tad_in_IMR90 = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                    cell_line='IMR90', tss=tss)
-
                 print(vcf_mut,
                       associated_gene,
                       '{0:+}'.format(distance_to_tss) if distance_to_tss else '',
-                      'yes' if mutation_and_tss_in_same_tad_in_hESC else 'no',
-                      'yes' if mutation_and_tss_in_same_tad_in_IMR90 else 'no',
+                      '\t'.join(
+                          ['yes'
+                           if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                              primary_tissue_or_cell_type=primary_tissue_or_cell_type,
+                              tss=tss
+                           )
+                           else 'no'
+                           for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+                           ]
+                      ),
                       sep='\t',
                       file=mut_to_associated_genes_fh)
 
@@ -227,6 +234,7 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
     print('Score mutations with Cluster-Buster ...\n', file=log_fh)
 
     import motifsinfo
+    import mutations
     import clusterbuster
 
     vcf_mut_ids_passing_clusterbuster_crm_score_threshold = set()
@@ -243,8 +251,6 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
               'mutation ID',
               'associated gene',
               'distance to TSS',
-              'in hESC TADs',
-              'in IMR90 TADs',
               'motif ID',
               'motif name',
               'directly annotated TFs',
@@ -256,6 +262,10 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
               'delta Cluster-Buster motif score',
               'wildtype consensus sequence',
               'mutant consensus sequence',
+              '\t'.join(['in ' + primary_tissue_or_cell_type + ' TADs'
+                         for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+                         ]
+                        ),
               sep='\t',
               file=clusterbuster_output_fh)
 
@@ -292,16 +302,9 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
 
                     distance_to_tss, tss = distance_to_tss_and_tss
 
-                    mutation_and_tss_in_same_tad_in_hESC = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                        cell_line='hESC', tss=tss)
-                    mutation_and_tss_in_same_tad_in_IMR90 = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                        cell_line='IMR90', tss=tss)
-
                     print(vcf_mut,
                           associated_gene,
                           '{0:+}'.format(distance_to_tss) if distance_to_tss else '',
-                          'yes' if mutation_and_tss_in_same_tad_in_hESC else 'no',
-                          'yes' if mutation_and_tss_in_same_tad_in_IMR90 else 'no',
                           '\t'.join([motif_id,
                                      motifsinfo.MotifsInfo.get_motif_name(motif_id),
                                      ';'.join(tfs if tfs else ['']),
@@ -315,6 +318,16 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
                                      clusterbuster_delta_score.mut_consensus,
                                      ]
                                     ),
+                          '\t'.join(
+                              ['yes'
+                               if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                                  primary_tissue_or_cell_type=primary_tissue_or_cell_type,
+                                  tss=tss
+                               )
+                               else 'no'
+                               for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+                               ]
+                          ),
                           sep='\t',
                           file=clusterbuster_output_fh)
 
@@ -361,6 +374,7 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
     print('Score mutations with MotifLocator ...\n', file=log_fh)
 
     import motifsinfo
+    import mutations
     import motiflocator
 
     nbr_of_mutations_which_pass_motiflocator_threshold = 0
@@ -435,8 +449,6 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
               'mutation ID',
               'associated gene',
               'distance to TSS',
-              'in hESC TADs',
-              'in IMR90 TADs',
               'motif ID',
               'motif name',
               'directly annotated TFs',
@@ -445,6 +457,10 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
               'delta MotifLocator score',
               'wildtype consensus sequence',
               'mutant consensus sequence',
+              '\t'.join(['in ' + primary_tissue_or_cell_type + ' TADs'
+                         for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+                         ]
+                        ),
               sep='\t',
               file=motiflocator_output_fh)
 
@@ -495,16 +511,9 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
                     distance_to_tss, tss = distance_to_tss_and_tss
 
-                    mutation_and_tss_in_same_tad_in_hESC = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                        cell_line='hESC', tss=tss)
-                    mutation_and_tss_in_same_tad_in_IMR90 = vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                        cell_line='IMR90', tss=tss)
-
                     print(vcf_mut,
                           associated_gene,
                           '{0:+}'.format(distance_to_tss) if distance_to_tss else '',
-                          'yes' if mutation_and_tss_in_same_tad_in_hESC else 'no',
-                          'yes' if mutation_and_tss_in_same_tad_in_IMR90 else 'no',
                           '\t'.join([motif_id,
                                      motifsinfo.MotifsInfo.get_motif_name(motif_id),
                                      ';'.join(tfs if tfs else ['']),
@@ -515,6 +524,16 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
                                      motiflocator_delta.mut_consensus,
                                      ]
                                     ),
+                          '\t'.join(
+                              ['yes'
+                               if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                                  primary_tissue_or_cell_type=primary_tissue_or_cell_type,
+                                  tss=tss
+                               )
+                               else 'no'
+                               for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+                               ]
+                          ),
                           sep='\t',
                           file=motiflocator_output_fh)
 

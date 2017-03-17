@@ -1,7 +1,7 @@
 """
 Purpose :      Provide objects and methods to work with mutations in an easy way.
 
-Copyright (C): 2016 - Gert Hulselmans
+Copyright (C): 2016-2017 - Gert Hulselmans
 """
 
 from __future__ import print_function
@@ -20,21 +20,32 @@ fasta_filename = os.path.join(
     'Homo_sapiens_assembly19_sorted.fasta'
 )
 
-# From http://compbio.med.harvard.edu/modencode/webpage/hic/hESC_domains_hg19.bed
-tads_of_hESC_filename = os.path.join(
-    os.path.dirname(__file__),
-    'data',
-    'tads',
-    'hESC_domains_hg19.bed'
-)
-
-# From http://compbio.med.harvard.edu/modencode/webpage/hic/IMR90_domains_hg19.bed
-tads_of_IMR90_filename = os.path.join(
-    os.path.dirname(__file__),
-    'data',
-    'tads',
-    'IMR90_domains_hg19.bed'
-)
+# TAD domains in 21 primary human tissues and cell types:
+#   - paper: http://www.cell.com/cell-reports/fulltext/S2211-1247(16)31481-4
+#   - TADs in BED format: data/tads/
+primary_tissues_and_cell_types_with_tads = [
+    'AD',
+    'AO',
+    'BL',
+    'CO',
+    'GM12878',
+    'H1',
+    'HC',
+    'IMR90',
+    'LG',
+    'LI',
+    'LV',
+    'MES',
+    'MSC',
+    'NPC',
+    'OV',
+    'PA',
+    'PO',
+    'RV',
+    'SB',
+    'SX',
+    'TRO',
+]
 
 
 class GenomicFasta:
@@ -68,20 +79,29 @@ class GenomicFasta:
 
 class TADs:
     @staticmethod
-    def get_tads_from_filename(tads_filename):
+    def load_tads_of_primary_tissue_or_cell_type(primary_tissue_or_cell_type):
         """
-        Load TADs from a file and store start and end position of each TAD in a per chromosome numpy array.
+        Load TADs for the specified primary tissue or cell type and store start and end position of each TAD in a per
+        chromosome numpy array.
 
-        :param tads_filename: BED file with TADs
+        :param primary_tissue_or_cell_type: primary tissue or cell type identifier
         :return: Dictionary with chromosome names as keys and a numpy array with start and end coordinates as values.
         """
+
+        tads_filename = os.path.join(
+            os.path.dirname(__file__),
+            'data',
+            'tads',
+            'TADs_{0:s}.bed'.format(primary_tissue_or_cell_type)
+        )
+
         tads_chrom_pos_dict = dict()
 
         with open(tads_filename, 'r') as fh_tads:
             for line in fh_tads:
                 columns = line.rstrip('\n').split('\t')
 
-                if len(columns) == 3:
+                if len(columns) >= 3:
                     # Set chromosome name as key and start (add 1 as it is in BED format) and end as value.
                     tads_chrom_pos_dict.setdefault(columns[0], []).append([int(columns[1]) + 1, int(columns[2])])
 
@@ -137,10 +157,13 @@ class VCFmut:
         for chrom, reg_doms in reg_doms_list_per_chrom.iteritems()
     }
 
-    # Load TADs from a file and store start and end position of each TAD in a per chromosome numpy array.
-    tads_start_end_array_per_chrom_for_cell_lines = dict()
-    tads_start_end_array_per_chrom_for_cell_lines['hESC'] = TADs.get_tads_from_filename(tads_of_hESC_filename)
-    tads_start_end_array_per_chrom_for_cell_lines['IMR90'] = TADs.get_tads_from_filename(tads_of_IMR90_filename)
+    # Load TADs for primary tissues and cell types and store start and end position of each TAD in a per chromosome
+    # numpy array.
+    tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types = dict()
+
+    for primary_tissue_or_cell_type in primary_tissues_and_cell_types_with_tads:
+        tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type] \
+            = TADs.load_tads_of_primary_tissue_or_cell_type(primary_tissue_or_cell_type)
 
     @staticmethod
     def from_mut_id(mut_id):
@@ -654,44 +677,44 @@ class VCFmut:
             )
         )
 
-    def tss_of_associated_gene_in_same_tad_as_mutation(self, cell_line, tss):
+    def tss_of_associated_gene_in_same_tad_as_mutation(self, primary_tissue_or_cell_type, tss):
         """
-        Check if mutations falls in a TAD for a specific cell line and that the TSS of the associated gene falls in the
-        same TAD.
+        Check if mutations falls in a TAD for a specific primary tissue or cell type and that the TSS of the associated
+        gene falls in the same TAD.
 
-        :param cell_line: Use TADs for this cell line: "hESC" or "IMR90".
+        :param primary_tissue_or_cell_type: Use TADs for this primary tissue or cell type.
         :param tss: TSS of associated gene.
 
         :return: True or False
         """
 
-        if cell_line not in VCFmut.tads_start_end_array_per_chrom_for_cell_lines:
+        if primary_tissue_or_cell_type not in VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types:
             raise ValueError(
-                'Unsupported cell line "{0:s}".'.format(cell_line)
+                'Unsupported cell line "{0:s}".'.format(primary_tissue_or_cell_type)
             )
 
         # Create a boolean array for the TADs located on the same chromosome as on which the mutation is
-        # located ( = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom] ) and
+        # located ( = VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom] ) and
         # for which which their interval contains the mutation start position:
         #   - The start position of a TAD
-        #     ( = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 0] )
+        #     ( = VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][:, 0] )
         #     is lower than or equal to the mutation position.
         #   - The end position of a TAD
-        #     ( = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 1] )
+        #     ( = VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][:, 1] )
         #     is greater than or equal to the mutation position.
 
         # If there was any overlap between a TAD and the mutation, return the TAD.
-        mutation_in_which_tad = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][
-            (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 0] <= self.start)
+        mutation_in_which_tad = VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][
+            (VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][:, 0] <= self.start)
             &
-            (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 1] >= self.start)
+            (VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][:, 1] >= self.start)
         ]
 
         # If there was any overlap between a TAD and the TSS of the associated gene, return the TAD.
-        tss_of_gene_in_which_tad = VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][
-            (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 0] <= tss)
+        tss_of_gene_in_which_tad = VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][
+            (VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][:, 0] <= tss)
             &
-            (VCFmut.tads_start_end_array_per_chrom_for_cell_lines[cell_line][self.chrom][:, 1] >= tss)
+            (VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][:, 1] >= tss)
         ]
 
         if numpy.shape(mutation_in_which_tad) == (1, 2) and numpy.shape(tss_of_gene_in_which_tad) == (1, 2):
@@ -705,7 +728,7 @@ class VCFmut:
                 'Mutation "{0:s}" or TSS ({1:d}) overlaps multiple TADs in cell line "{2:s}", which is unsupported.'.format(
                     self.mut_id,
                     tss,
-                    cell_line
+                    primary_tissue_or_cell_type
                 )
             )
 
