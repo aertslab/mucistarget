@@ -693,6 +693,10 @@ class VCFmut:
                 'Unsupported cell line "{0:s}".'.format(primary_tissue_or_cell_type)
             )
 
+        if self.chrom not in VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type]:
+            # If the chromosome on which the mutation is located, is not available in the TAD, return False.
+            return False
+
         # Create a boolean array for the TADs located on the same chromosome as on which the mutation is
         # located ( = VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom] ) and
         # for which which their interval contains the mutation start position:
