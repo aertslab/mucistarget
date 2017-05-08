@@ -385,7 +385,7 @@ class MotifsInfo:
                 print('# motif ID\tmotif name\tTF', file=fh)
 
                 for motif_id in sorted(MotifsInfo.motif_to_tfs_dict):
-                    for tf in MotifsInfo.motif_to_tfs_dict[motif_id]:
+                    for tf in sorted(MotifsInfo.motif_to_tfs_dict[motif_id]):
                         print(motif_id,
                               MotifsInfo.get_motif_name(motif_id),
                               tf,
@@ -407,7 +407,7 @@ class MotifsInfo:
                 print('# TF\tmotif ID', file=fh)
 
                 for tf in sorted(MotifsInfo.tf_to_motifs_dict):
-                    for motif_id in MotifsInfo.tf_to_motifs_dict[tf]:
+                    for motif_id in sorted(MotifsInfo.tf_to_motifs_dict[tf]):
                         print(tf,
                               motif_id,
                               sep='\t',
@@ -431,7 +431,7 @@ class MotifsInfo:
                 print('# TF\tmotif name', file=fh)
 
                 for tf in sorted(MotifsInfo.tf_to_motifs_dict):
-                    for motif_id in MotifsInfo.tf_to_motifs_dict[tf]:
+                    for motif_id in sorted(MotifsInfo.tf_to_motifs_dict[tf]):
                         print(tf,
                               MotifsInfo.motif_id_to_motif_name_dict[motif_id],
                               sep='\t',
