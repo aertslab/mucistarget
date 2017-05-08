@@ -16,11 +16,12 @@ Purpose :      When importing this file:
                    - with each TF and all associated motif IDs on one line .
                    - with each TF and TF pair on a separate line.
 
-Copyright (C): 2016 - Gert Hulselmans
+Copyright (C): 2016-2017 - Gert Hulselmans
 """
 
 from __future__ import print_function
 
+import argparse
 import os
 
 
@@ -552,39 +553,70 @@ class FilterINCLUSiveMotifsOnLength:
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description='Generate motif (ID and name) to TF and TF to motif (ID and name) TSV files.'
+    )
+
+    parser.add_argument(
+        '--motifcollection',
+        dest='motif_collection_version',
+        action='store',
+        type=str,
+        required=True,
+        choices=['v7', 'v8'],
+        help='Motif collection to use: "v7" or "v8".'
+    )
+
+    args = parser.parse_args()
+
+    # Fill MotifsInfo class with content for the chosen motif collection version.
+    MotifsInfo.set_motif_collection_version(motif_collection_version=args.motif_collection_version)
+
     motif_id_and_name_to_tfs_annotation_tab_filename = os.path.join(
         os.path.dirname(__file__),
         'data',
+        'motifs',
+        args.motif_collection_version,
         'directly_annotated_motifs',
         'motif_id_and_name_to_tfs_annotation.tab.tsv'
     )
     motif_id_and_name_to_tfs_annotation_line_filename = os.path.join(
         os.path.dirname(__file__),
         'data',
+        'motifs',
+        args.motif_collection_version,
         'directly_annotated_motifs',
         'motif_id_and_name_to_tfs_annotation.line.tsv'
     )
     tf_to_motif_ids_annotation_tab_filename = os.path.join(
         os.path.dirname(__file__),
         'data',
+        'motifs',
+        args.motif_collection_version,
         'directly_annotated_motifs',
         'tf_to_motif_ids_annotation.tab.tsv'
     )
     tf_to_motif_ids_annotation_line_filename = os.path.join(
         os.path.dirname(__file__),
         'data',
+        'motifs',
+        args.motif_collection_version,
         'directly_annotated_motifs',
         'tf_to_motif_ids_annotation.line.tsv'
     )
     tf_to_motif_names_annotation_tab_filename = os.path.join(
         os.path.dirname(__file__),
         'data',
+        'motifs',
+        args.motif_collection_version,
         'directly_annotated_motifs',
         'tf_to_motif_names_annotation.tab.tsv'
     )
     tf_to_motif_names_annotation_line_filename = os.path.join(
         os.path.dirname(__file__),
         'data',
+        'motifs',
+        args.motif_collection_version,
         'directly_annotated_motifs',
         'tf_to_motif_names_annotation.line.tsv'
     )
