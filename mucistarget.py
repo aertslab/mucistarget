@@ -206,6 +206,7 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
 
 
 def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
+                                                                 motif_collection_version,
                                                                  motif_ids_set,
                                                                  clusterbuster_output_filename,
                                                                  min_clusterbuster_crm_score_threshold,
@@ -218,6 +219,8 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
         OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
         mutation to the TSS and TSS as values.
         This dictionary can be made with get_all_mutations_that_overlap_with_regdoms_of_genes.
+    :param motif_collection_version:
+        motif collection version
     :param motif_ids_set:
         set of motif IDs
     :param clusterbuster_output_filename:
@@ -236,6 +239,9 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
     import motifsinfo
     import mutations
     import clusterbuster
+
+    # Fill MotifsInfo class with content for the chosen motif collection version.
+    motifsinfo.MotifsInfo.set_motif_collection_version(motif_collection_version=motif_collection_version)
 
     vcf_mut_ids_passing_clusterbuster_crm_score_threshold = set()
 
@@ -347,6 +353,7 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
 
 
 def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
+                                                  motif_collection_version,
                                                   motif_ids_set,
                                                   motiflocator_output_filename,
                                                   min_motiflocator_score_threshold,
@@ -359,6 +366,8 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
         OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
         mutation to the TSS and TSS as values.
         This dictionary can be made with get_all_mutations_that_overlap_with_regdoms_of_genes.
+    :param motif_collection_version:
+        motif collection version
     :param motif_ids_set:
         set of motif IDs
     :param motiflocator_output_filename:
@@ -376,6 +385,9 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
     import motifsinfo
     import mutations
     import motiflocator
+
+    # Fill MotifsInfo class with content for the chosen motif collection version.
+    motifsinfo.MotifsInfo.set_motif_collection_version(motif_collection_version=motif_collection_version)
 
     nbr_of_mutations_which_pass_motiflocator_threshold = 0
 
@@ -547,6 +559,7 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
 
 def main():
+    default_motif_collection_version = 'v7'
     default_min_clusterbuster_crm_score_threshold = 0.00
     default_min_motiflocator_score_threshold = 0.80
 
@@ -554,7 +567,7 @@ def main():
         description='Calculate the impact of mutations on the removal or introduction of TF binding sites.'
     )
 
-    mutations_input_group =parser.add_argument_group(
+    mutations_input_group = parser.add_argument_group(
         title='Mutations',
         description='Specify mutation format of the mutations which will be scored.'
     )
@@ -641,6 +654,16 @@ def main():
         required=False,
         help='Use all motifs instead of only directly annotated motifs, if --motifs and --tfs are not specified.'
     )
+    motifs_group.add_argument(
+        '--motifcollection',
+        dest='motif_collection_version',
+        action='store',
+        type=str,
+        required=False,
+        choices=['v7', 'v8'],
+        default=default_motif_collection_version,
+        help='Motif collection to use: "v7" (default) or "v8".'
+    )
 
     mutation_scoring_group = parser.add_argument_group(
         title='Mutation scoring methods',
@@ -725,6 +748,9 @@ def main():
     import motifsinfo
     print('Import mutations ...\n', file=log_fh)
     import mutations
+
+    # Fill MotifsInfo class with content for the chosen motif collection version.
+    motifsinfo.MotifsInfo.set_motif_collection_version(motif_collection_version=args.motif_collection_version)
 
     if args.vcf_filename:
         print('Using mutation filename: "{0:s}"\n'.format(args.vcf_filename), file=log_fh)
@@ -835,6 +861,7 @@ def main():
         stats_dict['nbr_of_mutations_which_pass_clusterbuster_crm_score_threshold'] = \
             calculate_and_write_clusterbuster_crm_and_motif_delta_scores(
                 vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
+                motif_collection_version=args.motif_collection_version,
                 motif_ids_set=motif_ids_set,
                 clusterbuster_output_filename=args.clusterbuster_output_filename,
                 min_clusterbuster_crm_score_threshold=args.min_clusterbuster_crm_score_threshold,
@@ -847,6 +874,7 @@ def main():
         stats_dict['nbr_of_mutations_which_pass_motiflocator_threshold'] = \
             calculate_and_write_motiflocator_delta_scores(
                 vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
+                motif_collection_version=args.motif_collection_version,
                 motif_ids_set=motif_ids_set,
                 motiflocator_output_filename=args.motiflocator_output_filename,
                 min_motiflocator_score_threshold=args.min_motiflocator_score_threshold,
