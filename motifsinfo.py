@@ -135,8 +135,15 @@ def get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
             'The Cluster-Buster and INCLUSive motif directory does not contain the same motifs. '
             'Motif IDs which are unique for Cluster-Buster: {0:s}. '
             'Motif IDs which are unique for INCLUSive: {1:s}'.format(
-                set(motif_id_to_clusterbuster_filename_dict).difference(set(motif_id_to_inclusive_filename_dict)),
-                set(motif_id_to_inclusive_filename_dict).difference(set(motif_id_to_clusterbuster_filename_dict))
+                ' '.join(
+                    set(motif_id_to_clusterbuster_filename_dict).difference(
+                        set(motif_id_to_inclusive_filename_dict))
+                ),
+                ' '.join(
+                    set(motif_id_to_inclusive_filename_dict).difference(
+                        set(motif_id_to_clusterbuster_filename_dict)
+                    )
+                )
             )
         )
 
