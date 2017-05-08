@@ -192,6 +192,19 @@ def get_direct_motif_to_tf_annotation(motif_to_tf_filename=default_motif_to_tf_f
                         # Only add motifs which have direct motif to TF annotation if it appears in the list of motifs.
                         motif_to_tfs_dict.setdefault(motif_id, set()).add(tf)
                         tf_to_motifs_dict.setdefault(tf, set()).add(motif_id)
+            elif len(columns) == 13:
+                if columns[12] == 'gene is directly annotated':
+                    motif_id = columns[0]
+                    tf = columns[5]
+
+                    if motif_ids_to_consider is None:
+                        # Add all motifs which have direct motif to TF annotation.
+                        motif_to_tfs_dict.setdefault(motif_id, set()).add(tf)
+                        tf_to_motifs_dict.setdefault(tf, set()).add(motif_id)
+                    elif motif_id in motif_ids_to_consider:
+                        # Only add motifs which have direct motif to TF annotation if it appears in the list of motifs.
+                        motif_to_tfs_dict.setdefault(motif_id, set()).add(tf)
+                        tf_to_motifs_dict.setdefault(tf, set()).add(motif_id)
 
     return motif_to_tfs_dict, tf_to_motifs_dict
 
