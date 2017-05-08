@@ -1,7 +1,7 @@
 """
 Purpose :      Run MotifLocator and get MotifLocator delta scores.
 
-Copyright (C): 2016 - Gert Hulselmans
+Copyright (C): 2016-2017 - Gert Hulselmans
 """
 
 from __future__ import print_function
@@ -19,7 +19,7 @@ default_motiflocator_path = 'MotifLocator'
 
 default_background_motiflocator_filename = os.path.join(os.path.dirname(__file__),
                                                         'data',
-                                                        'directly_annotated_motifs',
+                                                        'motifs',
                                                         'hg19.noncoding_genome.fasta.motifLoc322.bg')
 
 default_min_score_threshold = 0.80
