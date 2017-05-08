@@ -24,48 +24,77 @@ from __future__ import print_function
 import os
 
 
-# Filename with motif to TF annotation (snapshot from motif to TF database).
-default_motif_to_tf_filename = os.path.join(os.path.dirname(__file__),
-                                            'data',
-                                            'directly_annotated_motifs',
-                                            'motifs-v7-nr.hgnc-m0.001-o0.0.tbl')
+class MotifPaths:
+    # Class variables need to be initialised by calling:
+    #     MotifPaths.set_motif_collection_version(motif_collection_version)
+    motif_collection_version = None
+    default_motif_to_tf_filename = None
+    clusterbuster_directly_annotated_motifs_dir = None
+    clusterbuster_all_motifs_dir = None
+    inclusive_directly_annotated_motifs_dir = None
+    inclusive_all_motifs_dir = None
 
-# Directory with directly annotated motifs in Cluster-Buster format.
-clusterbuster_directly_annotated_motifs_dir = os.path.join(os.path.dirname(__file__),
-                                                           'data',
-                                                           'directly_annotated_motifs',
-                                                           'clusterbuster')
+    # Extension used for a motif filename in Cluster-Buster format.
+    default_clusterbuster_motifs_extension = '.cb'
 
-# Directory with all motifs in Cluster-Buster format.
-clusterbuster_all_motifs_dir = os.path.join(os.path.dirname(__file__),
-                                            'data',
-                                            'all_motifs',
-                                            'clusterbuster')
+    # Extension used for a motif filename in INCLUSive format.
+    default_inclusive_motifs_extension = '.INCLUsive.txt'
 
-# Extension used for a motif filename in Cluster-Buster format.
-default_clusterbuster_motifs_extension = '.cb'
+    @staticmethod
+    def set_motif_collection_version(motif_collection_version):
+        MotifPaths.motif_collection_version = motif_collection_version
 
-# Directory with directly annotated motifs in INCLUSive format.
-inclusive_directly_annotated_motifs_dir = os.path.join(os.path.dirname(__file__),
-                                                       'data',
-                                                       'directly_annotated_motifs',
-                                                       'inclusive')
+        # Filename with motif to TF annotation (snapshot from motif to TF database).
+        MotifPaths.default_motif_to_tf_filename = os.path.join(
+            os.path.dirname(__file__),
+            'data',
+            'motifs',
+            motif_collection_version,
+            'directly_annotated_motifs',
+            'motifs-{0:s}-nr.hgnc-m0.001-o0.0.tbl'.format(motif_collection_version))
 
-# Directory with all motifs in INCLUSive format.
-inclusive_all_motifs_dir = os.path.join(os.path.dirname(__file__),
-                                        'data',
-                                        'all_motifs',
-                                        'inclusive')
+        # Directory with directly annotated motifs in Cluster-Buster format.
+        MotifPaths.clusterbuster_directly_annotated_motifs_dir = os.path.join(
+            os.path.dirname(__file__),
+            'data',
+            'motifs',
+            motif_collection_version,
+            'directly_annotated_motifs',
+            'clusterbuster')
 
-# Extension used for a motif filename in INCLUSive format.
-default_inclusive_motifs_extension = '.INCLUsive.txt'
+        # Directory with all motifs in Cluster-Buster format.
+        MotifPaths.clusterbuster_all_motifs_dir = os.path.join(
+            os.path.dirname(__file__),
+            'data',
+            'motifs',
+            motif_collection_version,
+            'all_motifs',
+            'clusterbuster')
+
+        # Directory with directly annotated motifs in INCLUSive format.
+        MotifPaths.inclusive_directly_annotated_motifs_dir = os.path.join(
+            os.path.dirname(__file__),
+            'data',
+            'motifs',
+            motif_collection_version,
+            'directly_annotated_motifs',
+            'inclusive')
+
+        # Directory with all motifs in INCLUSive format.
+        MotifPaths.inclusive_all_motifs_dir = os.path.join(
+            os.path.dirname(__file__),
+            'data',
+            'motifs',
+            motif_collection_version,
+            'all_motifs',
+            'inclusive')
 
 
 def get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
-        clusterbuster_motifs_dir=clusterbuster_directly_annotated_motifs_dir,
-        clusterbuster_motifs_extension=default_clusterbuster_motifs_extension,
-        inclusive_motifs_dir=inclusive_directly_annotated_motifs_dir,
-        inclusive_motifs_extension=default_inclusive_motifs_extension):
+        clusterbuster_motifs_dir=MotifPaths.clusterbuster_directly_annotated_motifs_dir,
+        clusterbuster_motifs_extension=MotifPaths.default_clusterbuster_motifs_extension,
+        inclusive_motifs_dir=MotifPaths.inclusive_directly_annotated_motifs_dir,
+        inclusive_motifs_extension=MotifPaths.default_inclusive_motifs_extension):
     """
     Get motif names and motif filenames and motif lengths and PWMs.
 
@@ -155,7 +184,7 @@ def get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
             motif_id_to_inclusive_pwm_dict)
 
 
-def get_direct_motif_to_tf_annotation(motif_to_tf_filename=default_motif_to_tf_filename,
+def get_direct_motif_to_tf_annotation(motif_to_tf_filename=MotifPaths.default_motif_to_tf_filename,
                                       motif_ids_to_consider=None):
     """
     Get motif to TF annotation for motifs which are directly annotated.
@@ -219,34 +248,54 @@ class MotifsInfo:
       - Get motifs directly annotated for a certain TF.
     """
 
-    # Create dictionaries with information about all motifs.
-    (motif_id_to_motif_name_dict,
-     motif_name_to_motif_id_dict,
-     motif_id_to_motif_length_dict,
-     motif_id_to_clusterbuster_filename_dict,
-     motif_id_to_inclusive_filename_dict,
-     motif_id_to_inclusive_pwm_dict) = get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
-        clusterbuster_motifs_dir=clusterbuster_all_motifs_dir,
-        clusterbuster_motifs_extension=default_clusterbuster_motifs_extension,
-        inclusive_motifs_dir=inclusive_all_motifs_dir,
-        inclusive_motifs_extension=default_inclusive_motifs_extension
-    )
+    # Class variables need to be initialised by calling:
+    #     MotifsInfo.set_motif_collection_version(motif_collection_version)
+    motif_collection_version = None
+    motif_id_to_motif_name_dict = dict()
+    motif_name_to_motif_id_dict = dict()
+    motif_id_to_motif_length_dict = dict()
+    motif_id_to_clusterbuster_filename_dict = dict()
+    motif_id_to_inclusive_filename_dict = dict()
+    motif_id_to_inclusive_pwm_dict = dict()
 
-    # Get directly annotated motif names, from motif_id_to_inclusive_filename_dict by getting all INCLUSive motif files
-    # in inclusive_directly_annotated_motifs_dir.
-    directly_annotated_motifs_set = set(
-        get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
-            clusterbuster_motifs_dir=clusterbuster_directly_annotated_motifs_dir,
-            clusterbuster_motifs_extension=default_clusterbuster_motifs_extension,
-            inclusive_motifs_dir=inclusive_directly_annotated_motifs_dir,
-            inclusive_motifs_extension=default_inclusive_motifs_extension
-        )[4]
-    )
+    directly_annotated_motifs_set = set()
 
-    motif_to_tfs_dict, tf_to_motifs_dict = get_direct_motif_to_tf_annotation(
-        default_motif_to_tf_filename,
-        motif_ids_to_consider=motif_id_to_inclusive_filename_dict
-    )
+    motif_to_tfs_dict = dict()
+    tf_to_motifs_dict = dict()
+
+    @staticmethod
+    def set_motif_collection_version(motif_collection_version):
+        if MotifsInfo.motif_collection_version != motif_collection_version:
+            MotifPaths.set_motif_collection_version(motif_collection_version=motif_collection_version)
+
+            # Create dictionaries with information about all motifs.
+            (MotifsInfo.motif_id_to_motif_name_dict,
+             MotifsInfo.motif_name_to_motif_id_dict,
+             MotifsInfo.motif_id_to_motif_length_dict,
+             MotifsInfo.motif_id_to_clusterbuster_filename_dict,
+             MotifsInfo.motif_id_to_inclusive_filename_dict,
+             MotifsInfo.motif_id_to_inclusive_pwm_dict) = get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
+                clusterbuster_motifs_dir=MotifPaths.clusterbuster_all_motifs_dir,
+                clusterbuster_motifs_extension=MotifPaths.default_clusterbuster_motifs_extension,
+                inclusive_motifs_dir=MotifPaths.inclusive_all_motifs_dir,
+                inclusive_motifs_extension=MotifPaths.default_inclusive_motifs_extension
+            )
+
+            # Get directly annotated motif names, from motif_id_to_inclusive_filename_dict by getting all INCLUSive motif files
+            # in inclusive_directly_annotated_motifs_dir.
+            MotifsInfo.directly_annotated_motifs_set = set(
+                get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
+                    clusterbuster_motifs_dir=MotifPaths.clusterbuster_directly_annotated_motifs_dir,
+                    clusterbuster_motifs_extension=MotifPaths.default_clusterbuster_motifs_extension,
+                    inclusive_motifs_dir=MotifPaths.inclusive_directly_annotated_motifs_dir,
+                    inclusive_motifs_extension=MotifPaths.default_inclusive_motifs_extension
+                )[4]
+            )
+
+            MotifsInfo.motif_to_tfs_dict, MotifsInfo.tf_to_motifs_dict = get_direct_motif_to_tf_annotation(
+                MotifPaths.default_motif_to_tf_filename,
+                motif_ids_to_consider=MotifsInfo.motif_id_to_inclusive_filename_dict
+            )
 
     @staticmethod
     def get_all_motif_ids(directly_annotated_motifs_only):
