@@ -13,12 +13,45 @@ import pyfasta
 
 import create_regulatory_domains
 
-fasta_filename = os.path.join(
-    os.path.dirname(__file__),
-    'data',
-    'genomic_fasta',
-    'Homo_sapiens_assembly19_sorted.fasta'
-)
+fasta_filename_dict = {
+    'dm3': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'genomic_fasta',
+            'dm3.fa'
+        ),
+    'dm6': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'genomic_fasta',
+            'dm6.fa'
+        ),
+    'hg19': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'genomic_fasta',
+            'Homo_sapiens_assembly19_sorted.fasta'
+        ),
+    'hg38': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'genomic_fasta',
+            'hg38.fa'
+        ),
+    'mm9': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'genomic_fasta',
+            'mm9.fa'
+        ),
+    'mm10': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'genomic_fasta',
+            'mm10.fa'
+        ),
+}
+
 
 # TAD domains in 21 primary human tissues and cell types:
 #   - paper: http://www.cell.com/cell-reports/fulltext/S2211-1247(16)31481-4
@@ -49,32 +82,31 @@ primary_tissues_and_cell_types_with_tads = [
 
 
 class GenomicFasta:
-    fasta_sequences = pyfasta.Fasta(fasta_filename)
+    def __init__(self, fasta_filename):
+        self.fasta_sequences = pyfasta.Fasta(fasta_filename)
 
-    # Calculate chromosome sizes from file index positions for end and start in flattened FASTA file.
-    chrom_sizes_dict = {
-        chrom: index_pos[1] - index_pos[0] for chrom, index_pos in fasta_sequences.index.iteritems()
-    }
+        # Calculate chromosome sizes from file index positions for end and start in flattened FASTA file.
+        self.chrom_sizes_dict = {
+            chrom: index_pos[1] - index_pos[0] for chrom, index_pos in self.fasta_sequences.index.iteritems()
+        }
 
-    @staticmethod
-    def is_chromosome_name(chrom):
+    def is_chromosome_name(self, chrom):
         """
         Check if the passed chromosome name is in this assembly.
 
         :param chrom: Chromosome name.
         :return: True or False
         """
-        return chrom in GenomicFasta.chrom_sizes_dict
+        return chrom in self.chrom_sizes_dict
 
-    @staticmethod
-    def chromosome_size(chrom):
+    def chromosome_size(self, chrom):
         """
         Get chromosome size for the requested chromosome.
 
         :param chrom: Chromosome name.
         :return: Chromosome size (or 0 if chromsome name was not found).
         """
-        return GenomicFasta.chrom_sizes_dict.get(chrom, 0)
+        return self.chrom_sizes_dict.get(chrom, 0)
 
 
 class TADs:
@@ -120,50 +152,91 @@ class TADs:
 
 
 class VCFmut:
-    # Create a list of GeneTSS objects sorted by chromosome name, TSS, strand and gene name from a TAB-separated file.
-    genes_tss_list = create_regulatory_domains.GenesTSSList.load_genes_tss_file(
-        genes_tss_filename=create_regulatory_domains.default_genes_tss_filename
-    )
-
-    # Calculate the regulatory domains for each gene.
-    # See "create_basal_plus_extension_regdoms" for more information.
-    reg_doms_list_per_chrom = create_regulatory_domains.create_basal_plus_extension_regdoms(
-        genes_tss_list=genes_tss_list,
-        maximum_extension=create_regulatory_domains.default_maximum_extension,
-        basal_up=create_regulatory_domains.default_basal_up,
-        basal_down=create_regulatory_domains.default_basal_down,
-        chrom_sizes=create_regulatory_domains.ChromSizes()
-    )
+    # Store GenomicFasta.
+    genomic_fasta = None
 
     # Store start and end position, tss and strand of each regulatory domain in a per chromosome numpy array.
-    reg_doms_start_end_tss_strand_array_per_chrom = {
-        chrom: numpy.array(
-            [
-                [reg_dom.chrom_start, reg_dom.chrom_end, reg_dom.tss, 1 if reg_dom.strand == '+' else -1]
-                for reg_dom in reg_doms
-            ]
-        )
-        for chrom, reg_doms in reg_doms_list_per_chrom.iteritems()
-    }
+    reg_doms_start_end_tss_strand_array_per_chrom = None
 
     # Store gene name for each regulatory domain in a per chromosome numpy array.
-    reg_doms_genes_array_per_chrom = {
-        chrom: numpy.array(
-            [
-                reg_dom.name
-                for reg_dom in reg_doms
-            ]
-        )
-        for chrom, reg_doms in reg_doms_list_per_chrom.iteritems()
-    }
+    reg_doms_genes_array_per_chrom = None
 
     # Load TADs for primary tissues and cell types and store start and end position of each TAD in a per chromosome
     # numpy array.
-    tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types = dict()
+    tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types = None
 
-    for primary_tissue_or_cell_type in primary_tissues_and_cell_types_with_tads:
-        tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type] \
-            = TADs.load_tads_of_primary_tissue_or_cell_type(primary_tissue_or_cell_type)
+    @staticmethod
+    def set_genomic_fasta(fasta_filename):
+        """
+        Set genomic fasta file for VCFmut class before making VCFmut instances.
+
+        :param fasta_filename: Genomic FASTA filename
+        :return: 
+        """
+
+        VCFmut.genomic_fasta = GenomicFasta(fasta_filename=fasta_filename)
+
+    @staticmethod
+    def set_reg_doms():
+        """
+        Set regulatory domains for human (hg19) VCFmut class.
+
+        :return: 
+        """
+
+        # Create a list of GeneTSS objects sorted by chromosome name,
+        # TSS, strand and gene name from a TAB-separated file.
+        genes_tss_list = create_regulatory_domains.GenesTSSList.load_genes_tss_file(
+            genes_tss_filename=create_regulatory_domains.default_genes_tss_filename
+        )
+
+        # Calculate the regulatory domains for each gene.
+        # See "create_basal_plus_extension_regdoms" for more information.
+        reg_doms_list_per_chrom = create_regulatory_domains.create_basal_plus_extension_regdoms(
+            genes_tss_list=genes_tss_list,
+            maximum_extension=create_regulatory_domains.default_maximum_extension,
+            basal_up=create_regulatory_domains.default_basal_up,
+            basal_down=create_regulatory_domains.default_basal_down,
+            chrom_sizes=create_regulatory_domains.ChromSizes()
+        )
+
+        # Store start and end position, tss and strand of each regulatory domain in a per chromosome numpy array.
+        VCFmut.reg_doms_start_end_tss_strand_array_per_chrom = {
+            chrom: numpy.array(
+                [
+                    [reg_dom.chrom_start, reg_dom.chrom_end, reg_dom.tss, 1 if reg_dom.strand == '+' else -1]
+                    for reg_dom in reg_doms
+                ]
+            )
+            for chrom, reg_doms in reg_doms_list_per_chrom.iteritems()
+        }
+
+        # Store gene name for each regulatory domain in a per chromosome numpy array.
+        VCFmut.reg_doms_genes_array_per_chrom = {
+            chrom: numpy.array(
+                [
+                    reg_dom.name
+                    for reg_dom in reg_doms
+                ]
+            )
+            for chrom, reg_doms in reg_doms_list_per_chrom.iteritems()
+        }
+
+    @staticmethod
+    def set_tads():
+        """
+        Set TAD domains for human (hg19) VCFmut class.
+
+        :return: 
+        """
+
+        # Load TADs for primary tissues and cell types and store start and end position of each TAD in a per chromosome
+        # numpy array.
+        VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types = dict()
+
+        for primary_tissue_or_cell_type in primary_tissues_and_cell_types_with_tads:
+            VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type] \
+                = TADs.load_tads_of_primary_tissue_or_cell_type(primary_tissue_or_cell_type)
 
     @staticmethod
     def from_mut_id(mut_id):
@@ -451,7 +524,12 @@ class VCFmut:
                                                               mut,
                                                               ' no_ref_specified' if no_ref_specified else '')
 
-        if not GenomicFasta.is_chromosome_name(chrom):
+        if not VCFmut.genomic_fasta:
+            raise ValueError(
+                'No genomic FASTA specified: run VCFmut.set_genomic_fasta() first.'
+            )
+
+        if not VCFmut.genomic_fasta.is_chromosome_name(chrom):
             raise ValueError(
                 'Chromosome name "{0:s}" is not valid ({1:s}).'.format(chrom, self.mut_line)
             )
@@ -503,11 +581,11 @@ class VCFmut:
             raise ValueError(
                 'Mutation positions are one-based and cannot be zero or lower ({0:s}).'.format(self.mut_line)
             )
-        elif self.start > GenomicFasta.chromosome_size(chrom):
+        elif self.start > VCFmut.genomic_fasta.chromosome_size(chrom):
             raise ValueError(
                 'Mutation position {0:d} is higher than the chromosome length ({1:d}) '
                 'for chromosome "{2:s}" ({3:s}).'.format(self.start,
-                                                         GenomicFasta.chromosome_size(chrom),
+                                                         VCFmut.genomic_fasta.chromosome_size(chrom),
                                                          self.chrom,
                                                          self.mut_line)
             )
@@ -638,6 +716,10 @@ class VCFmut:
         :return: dictionary of gene names as keys and distance to the TSS and TSS as values.
         """
 
+        if not VCFmut.reg_doms_start_end_tss_strand_array_per_chrom:
+            # If no regulatory domains were loaded, return an empty dictionary.
+            return {}
+
         # Create a boolean array for the regulatory regions located on the same chromosome as on which the mutation is
         # located ( = VCFmut.reg_doms_start_end_tss_strand_array_per_chrom[self.chrom] ) and for which which their
         # interval contains the mutation start position:
@@ -687,6 +769,10 @@ class VCFmut:
 
         :return: True or False
         """
+
+        if not VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types:
+            # If no TADs were loaded, return False.
+            return False
 
         if primary_tissue_or_cell_type not in VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types:
             raise ValueError(
@@ -749,7 +835,7 @@ class VCFmut:
 
         # Reference sequence at the mutation position.
         ref_seq_at_mut_pos = str(
-            GenomicFasta.fasta_sequences.sequence(
+            VCFmut.genomic_fasta.fasta_sequences.sequence(
                 {'chr': self.chrom,
                  'start': mut_start,
                  'stop': mut_end,
@@ -774,11 +860,11 @@ class VCFmut:
         mut_start = self.start
         mut_end = self.start + (len(self.ref) - 1)
         after_mut_end = min(mut_end + bp_downstream,
-                            GenomicFasta.chromosome_size(self.chrom))
+                            VCFmut.genomic_fasta.chromosome_size(self.chrom))
 
         # Reference sequence before mutation position.
         ref_seq_before_mut_pos = str(
-            GenomicFasta.fasta_sequences.sequence(
+            VCFmut.genomic_fasta.fasta_sequences.sequence(
                 {'chr': self.chrom,
                  'start': before_mut_start,
                  'stop': mut_start - 1,
@@ -788,7 +874,7 @@ class VCFmut:
 
         # Reference sequence at the mutation position.
         ref_seq_at_mut_pos = str(
-            GenomicFasta.fasta_sequences.sequence(
+            VCFmut.genomic_fasta.fasta_sequences.sequence(
                 {'chr': self.chrom,
                  'start': mut_start,
                  'stop': mut_end,
@@ -798,7 +884,7 @@ class VCFmut:
 
         # Reference sequence before after mutation position.
         ref_seq_after_mut_pos = str(
-            GenomicFasta.fasta_sequences.sequence(
+            VCFmut.genomic_fasta.fasta_sequences.sequence(
                 {'chr': self.chrom,
                  'start': mut_end + 1,
                  'stop': after_mut_end,

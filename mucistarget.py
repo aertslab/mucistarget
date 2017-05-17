@@ -179,7 +179,9 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
               '\t'.join(['in ' + primary_tissue_or_cell_type + ' TADs'
                          for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
                          ]
-                        ),
+                        )
+              if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+              else '',
               sep='\t',
               file=mut_to_associated_genes_fh)
 
@@ -200,7 +202,9 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
                            else 'no'
                            for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
                            ]
-                      ),
+                      )
+                      if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+                      else '',
                       sep='\t',
                       file=mut_to_associated_genes_fh)
 
@@ -271,7 +275,9 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
               '\t'.join(['in ' + primary_tissue_or_cell_type + ' TADs'
                          for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
                          ]
-                        ),
+                        )
+              if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+              else '',
               sep='\t',
               file=clusterbuster_output_fh)
 
@@ -333,7 +339,9 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
                                else 'no'
                                for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
                                ]
-                          ),
+                          )
+                          if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+                          else '',
                           sep='\t',
                           file=clusterbuster_output_fh)
 
@@ -472,7 +480,9 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
               '\t'.join(['in ' + primary_tissue_or_cell_type + ' TADs'
                          for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
                          ]
-                        ),
+                        )
+              if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+              else '',
               sep='\t',
               file=motiflocator_output_fh)
 
@@ -545,7 +555,9 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
                                else 'no'
                                for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
                                ]
-                          ),
+                          )
+                          if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+                          else '',
                           sep='\t',
                           file=motiflocator_output_fh)
 
@@ -665,6 +677,21 @@ def main():
         help='Motif collection to use: "v7" (default) or "v8".'
     )
 
+    assembly_group = parser.add_argument_group(
+        title='Assembly',
+        description='Specify which assembly to use.'
+    )
+    assembly_group.add_argument(
+        '--assembly',
+        dest='assembly',
+        action='store',
+        type=str,
+        required=False,
+        choices=['dm3', 'dm6', 'hg19', 'hg38', 'mm9', 'mm10'],
+        default='hg19',
+        help='Assembly version: "hg19" (TADs and associated genes: default) or "dm3", "dm6", "hg38", "mm9", "mm10" (no TADs and associated genes).'
+    )
+
     mutation_scoring_group = parser.add_argument_group(
         title='Mutation scoring methods',
         description='Specify which mutation scoring method should be used.'
@@ -751,6 +778,14 @@ def main():
 
     # Fill MotifsInfo class with content for the chosen motif collection version.
     motifsinfo.MotifsInfo.set_motif_collection_version(motif_collection_version=args.motif_collection_version)
+
+    # Set genomic fasta for VCFmut class.
+    mutations.VCFmut.set_genomic_fasta(fasta_filename=mutations.fasta_filename_dict[args.assembly])
+
+    if args.assembly == 'hg19':
+        # Set regulatory domains and TADs for VCFmut class.
+        mutations.VCFmut.set_reg_doms()
+        mutations.VCFmut.set_tads()
 
     if args.vcf_filename:
         print('Using mutation filename: "{0:s}"\n'.format(args.vcf_filename), file=log_fh)
