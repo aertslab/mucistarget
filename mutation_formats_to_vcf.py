@@ -49,11 +49,7 @@ def main():
                        action='store',
                        type=str,
                        required=False,
-                       help='File with Complete Genomics mutation calls: '
-                            'chr10_100038800_100038801_TTTTG_-----_DEL '
-                            'chr10_10011659_10011660_--_AT_INS '
-                            'chr10_100142677_100142678_T_-_INDEL '
-                            'chr10_100061061_100061062_C_T_SNP')
+                       help='File with Complete Genomics mutation calls.')
 
     parser.add_argument('--column-number',
                        dest='column_number',
@@ -80,34 +76,29 @@ def main():
     import mutations
 
     if args.complete_genomics_filename:
-        with open(args.vcf_filename, 'w') as vcf_fh:
-            with open(args.complete_genomics_filename, 'r') as gc_fh:
-                for line in gc_fh:
-                    line = line.rstrip('\r\n')
+        with open(args.vcf_filename, 'w') as vcf_fh, open(args.complete_genomics_filename, 'r') as gc_fh:
+            for line in gc_fh:
+                line = line.rstrip('\r\n')
 
-                    if line == '' or line.startswith('#'):
-                        continue
+                if line == '' or line.startswith('#') or line.startswith('>'):
+                    continue
 
-                    if line.startswith('>'):
-                        column_headers = '# chrom\tstart\tmut_id\tref\tmut\t' + line[1:]
-                        continue
+                columns = line.split('\t')
 
-                    columns = line.split('\t')
+                if len(columns) >= 9:
+                    chrom = columns[3]
+                    start = columns[4]
+                    mut_type = columns[6]
+                    ref = columns[7]
+                    mut = columns[8]
 
-                    if len(columns) >= 9:
-                        chrom = columns[2]
-                        start = columns[3]
-                        mut_type = columns[6]
-                        ref = columns[7]
-                        mut = columns[8]
+                    if mut_type in ('snp', 'del', 'ins'):
+                        # Only process SNPs, deletions and insertions.
+                        vcf_mut = mutations.VCFmut.from_zero_based_no_ref_specified(chrom, start, ref, mut)
 
-                        if mut_type in ('snp', 'del', 'ins'):
-                            # Only process SNPs, deletions and insertions.
-                            vcf_mut = mutations.VCFmut.from_zero_based_no_ref_specified(chrom, start, ref, mut)
-
-                            print(vcf_mut.chrom, vcf_mut.start, vcf_mut.mut_id, vcf_mut.ref, vcf_mut.mut, line,
-                                  sep='\t',
-                                  file=vcf_fh)
+                        print(vcf_mut.chrom, vcf_mut.start, vcf_mut.mut_id, vcf_mut.ref, vcf_mut.mut, line,
+                              sep='\t',
+                              file=vcf_fh)
     else:
         if args.mut_ids_filename:
             vcf_mut_iterator = mutations.VCFmut.from_mut_ids_file(
