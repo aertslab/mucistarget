@@ -1,7 +1,7 @@
 """
 Purpose :      Run Cluster-Buster and get Cluster-Buster CRM and motif delta scores.
 
-Copyright (C): 2016 - Gert Hulselmans
+Copyright (C): 2016-2019 - Gert Hulselmans
 """
 
 from __future__ import print_function
@@ -198,6 +198,7 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
                              '-f', '0',
                              '-c', '0.0',
                              '-m', '0.0',
+                             '-r', '10000',
                              clusterbuster_matrix_filename,
                              '/dev/stdin']
 
