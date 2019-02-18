@@ -1,18 +1,11 @@
 """
 Purpose :      Run external commands.
 
-Copyright (C): 2016 - Gert Hulselmans
+Copyright (C): 2016-2019 - Gert Hulselmans
 """
 
-from __future__ import print_function
-
-import os
+import subprocess
 import sys
-
-if os.name == 'posix' and sys.version_info[0] < 3:
-    import subprocess32 as subprocess
-else:
-    import subprocess
 
 
 def run_cmd(cmd, stdin=None):

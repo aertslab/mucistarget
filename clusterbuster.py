@@ -4,8 +4,6 @@ Purpose :      Run Cluster-Buster and get Cluster-Buster CRM and motif delta sco
 Copyright (C): 2016-2019 - Gert Hulselmans
 """
 
-from __future__ import print_function
-
 from io import BytesIO
 
 import command
@@ -214,7 +212,7 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
     # Parse Cluster-Buster output.
     with BytesIO(clusterbuster_command_stdout_data) as clusterbuster_fh:
         for clusterbuster_line in clusterbuster_fh:
-            clusterbuster_line = clusterbuster_line.rstrip()
+            clusterbuster_line = str(clusterbuster_line).rstrip()
 
             if clusterbuster_line.startswith('>'):
                 fasta_seq_id = clusterbuster_line.split(' ')[0][1:]
@@ -320,7 +318,7 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
 
     clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut_delta_above_threshold = dict()
 
-    for vcf_mut, clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut in clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut.iteritems():
+    for vcf_mut, clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut in clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut.items():
         if (clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut[0][0] >= min_crm_score_threshold
                 or clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut[1][0] >= min_crm_score_threshold):
             clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut_delta_above_threshold[vcf_mut] \

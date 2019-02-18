@@ -1,10 +1,8 @@
 """
 Purpose :      Provide objects and methods to work with mutations in an easy way.
 
-Copyright (C): 2016-2017 - Gert Hulselmans
+Copyright (C): 2016-2019 - Gert Hulselmans
 """
-
-from __future__ import print_function
 
 import numpy
 import os.path
@@ -12,6 +10,7 @@ import os.path
 import pyfasta
 
 import create_regulatory_domains
+
 
 fasta_filename_dict = {
     'dm3': os.path.join(
@@ -87,7 +86,7 @@ class GenomicFasta:
 
         # Calculate chromosome sizes from file index positions for end and start in flattened FASTA file.
         self.chrom_sizes_dict = {
-            chrom: index_pos[1] - index_pos[0] for chrom, index_pos in self.fasta_sequences.index.iteritems()
+            chrom: index_pos[1] - index_pos[0] for chrom, index_pos in self.fasta_sequences.index.items()
         }
 
     def is_chromosome_name(self, chrom):
@@ -145,7 +144,7 @@ class TADs:
                     for region in regions
                     ]
             )
-            for chrom, regions in tads_chrom_pos_dict.iteritems()
+            for chrom, regions in tads_chrom_pos_dict.items()
             }
 
         return tads_start_end_array_per_chrom
@@ -208,7 +207,7 @@ class VCFmut:
                     for reg_dom in reg_doms
                 ]
             )
-            for chrom, reg_doms in reg_doms_list_per_chrom.iteritems()
+            for chrom, reg_doms in reg_doms_list_per_chrom.items()
         }
 
         # Store gene name for each regulatory domain in a per chromosome numpy array.
@@ -219,7 +218,7 @@ class VCFmut:
                     for reg_dom in reg_doms
                 ]
             )
-            for chrom, reg_doms in reg_doms_list_per_chrom.iteritems()
+            for chrom, reg_doms in reg_doms_list_per_chrom.items()
         }
 
     @staticmethod

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Purpose :      When importing this file:
@@ -16,10 +16,8 @@ Purpose :      When importing this file:
                    - with each TF and all associated motif IDs on one line .
                    - with each TF and TF pair on a separate line.
 
-Copyright (C): 2016-2017 - Gert Hulselmans
+Copyright (C): 2016-2019 - Gert Hulselmans
 """
-
-from __future__ import print_function
 
 import argparse
 import os

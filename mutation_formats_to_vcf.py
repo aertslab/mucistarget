@@ -1,12 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Purpose :      Create VCF files (first 5 columns in VCF format) from various input formats.
 
-Copyright (C): 2016 - Gert Hulselmans
+Copyright (C): 2016-2019 - Gert Hulselmans
 """
-
-from __future__ import print_function
 
 import argparse
 

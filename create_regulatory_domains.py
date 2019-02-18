@@ -1,12 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Purpose:       Create BED file with regulatory domains from file with TSS information for each gene.
 
-Copyright (C): 2016 - Gert Hulselmans
+Copyright (C): 2016-2019 - Gert Hulselmans
 """
-
-from __future__ import print_function
 
 import argparse
 import os.path

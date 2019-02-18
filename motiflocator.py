@@ -1,10 +1,8 @@
 """
 Purpose :      Run MotifLocator and get MotifLocator delta scores.
 
-Copyright (C): 2016-2017 - Gert Hulselmans
+Copyright (C): 2016-2019 - Gert Hulselmans
 """
-
-from __future__ import print_function
 
 import os.path
 
@@ -139,7 +137,7 @@ def calculate_motiflocator_delta_scores(fasta_string,
 
     with BytesIO(motiflocator_command_stdout_data) as gff_fh:
         for gff_line in gff_fh:
-            columns = gff_line.split('\t')
+            columns = str(gff_line).split('\t')
 
             if len(columns) == 9:
                 # FASTA sequence ID constructed by VCFmut.make_fasta_for_wt_and_mut().
@@ -219,7 +217,7 @@ def calculate_motiflocator_delta_scores(fasta_string,
 
     motiflocator_max_scores_wt_mut_delta_above_threshold = dict()
 
-    for motif_id, max_scores_and_consencus_for_wt_mut in motiflocator_max_scores_and_consensus_for_wt_mut.iteritems():
+    for motif_id, max_scores_and_consencus_for_wt_mut in motiflocator_max_scores_and_consensus_for_wt_mut.items():
         if (max_scores_and_consencus_for_wt_mut[0][0] >= min_score_threshold
                 or max_scores_and_consencus_for_wt_mut[1][0] >= min_score_threshold):
             motiflocator_max_scores_wt_mut_delta_above_threshold[motif_id] = MotifLocatorDeltaScore(

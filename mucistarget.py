@@ -1,13 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
 Purpose :      Calculate the impact of mutations on the removal or introduction of TF binding sites.
 
-Copyright (C): 2016-2017 - Gert Hulselmans
+Copyright (C): 2016-2019 - Gert Hulselmans
 """
-
-from __future__ import print_function
 
 import argparse
 import sys
@@ -185,9 +183,9 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
               sep='\t',
               file=mut_to_associated_genes_fh)
 
-        for vcf_mut, associated_genes_and_distance_to_tss_and_tss_dict in vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict.iteritems():
+        for vcf_mut, associated_genes_and_distance_to_tss_and_tss_dict in vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict.items():
             # Write to the output file.
-            for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.iteritems():
+            for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.items():
                 distance_to_tss, tss = distance_to_tss_and_tss
 
                 print(vcf_mut,
@@ -304,10 +302,10 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
                 sys.exit(1)
 
             # Write to the output file.
-            for vcf_mut, clusterbuster_delta_score in clusterbuster_delta_scores.iteritems():
+            for vcf_mut, clusterbuster_delta_score in clusterbuster_delta_scores.items():
                 associated_genes_and_distance_to_tss_and_tss_dict = vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict[vcf_mut]
 
-                for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.iteritems():
+                for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.items():
                     vcf_mut_ids_passing_clusterbuster_crm_score_threshold.add(vcf_mut.mut_id)
 
                     tfs = motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)
@@ -489,7 +487,7 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
         nbr_mutations = len(vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict)
 
         for mutation_idx, (vcf_mut, associated_genes_and_distance_to_tss_and_tss_dict) in enumerate(
-                vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict.iteritems()):
+                vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict.items()):
             print('  Scoring mutation "{0:s}" ({1:d} of {2:d}) with MotifLocator: '.format(vcf_mut.mut_id,
                                                                                            mutation_idx + 1,
                                                                                            nbr_mutations),
@@ -527,8 +525,8 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
             )
 
             # Write to the output file.
-            for motif_id, motiflocator_delta in motiflocator_delta_scores.iteritems():
-                for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.iteritems():
+            for motif_id, motiflocator_delta in motiflocator_delta_scores.items():
+                for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.items():
                     tfs = motifsinfo.MotifsInfo.get_tfs_for_motif(motif_id)
 
                     distance_to_tss, tss = distance_to_tss_and_tss
@@ -969,6 +967,7 @@ def main():
     print('', file=log_fh)
 
     log_fh.close()
+
 
 if __name__ == "__main__":
     main()
