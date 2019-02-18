@@ -191,7 +191,8 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
     except ValueError as e:
         raise e
 
-    # Score wildtype and mutant FASTA sequence for each mutation with Cluster-Buster for a specific motif.
+    # Score wildtype and mutant FASTA sequence for each mutation with Cluster-Buster for a specific motif and use
+    # the whole sequences to calculate the background nucleotide frequencies.
     clusterbuster_command = [clusterbuster_path,
                              '-f', '0',
                              '-c', '0.0',
@@ -232,8 +233,8 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
                 if is_wt:
                     # For wildtype sequence.
 
-                    # The highest possible motif end position we care about ends at that position where the first
-                    # position of the motif overlaps with the last position of the reference sequence with will be
+                    # The highest possible motif end position we care about, ends at that position where the first
+                    # position of the motif overlaps with the last position of the reference sequence which will be
                     # altered by the mutation.
                     highest_motif_end_pos_to_consider = (
                         (bp_upstream + 1) +
@@ -243,8 +244,8 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
                 else:
                     # For mutated sequence.
 
-                    # The highest possible motif end position we care about ends at that position where the first
-                    # position of the motif overlaps with the last position of the mutant sequence with will be altered
+                    # The highest possible motif end position we care about, ends at that position where the first
+                    # position of the motif overlaps with the last position of the mutant sequence which will be altered
                     # by the mutation.
                     highest_motif_end_pos_to_consider = (
                         (bp_upstream + 1) +
@@ -262,16 +263,19 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
 
                 if (crm_start_pos <= highest_motif_end_pos_to_consider and
                             crm_end_pos >= lowest_motif_start_pos_to_consider):
+                    # Current CRM contains the mutation position.
                     consider_current_crm = True
                 else:
                     consider_current_crm = False
 
                 continue
+
+            # Use the current CRM if it contains the mutation position.
             if consider_current_crm:
                 if clusterbuster_line.startswith('Score:'):
                     crm_score = float(clusterbuster_line.split(" ")[1])
 
-                    # Set initial values for wildtype and mutant Cluster-Buster CRM socre, motif score and consensus
+                    # Set initial values for wildtype and mutant Cluster-Buster CRM score, motif score and consensus
                     # sequence for each mutation.
                     clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut.setdefault(
                         vcf_mut,

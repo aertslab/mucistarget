@@ -280,8 +280,8 @@ class MotifsInfo:
                 inclusive_motifs_extension=MotifPaths.default_inclusive_motifs_extension
             )
 
-            # Get directly annotated motif names, from motif_id_to_inclusive_filename_dict by getting all INCLUSive motif files
-            # in inclusive_directly_annotated_motifs_dir.
+            # Get directly annotated motif names, from motif_id_to_inclusive_filename_dict by getting all INCLUSive
+            # motif files in inclusive_directly_annotated_motifs_dir.
             MotifsInfo.directly_annotated_motifs_set = set(
                 get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
                     clusterbuster_motifs_dir=MotifPaths.clusterbuster_directly_annotated_motifs_dir,

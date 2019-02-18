@@ -402,6 +402,10 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
             tempfile.NamedTemporaryFile() as inclusive_matrix_min_motif_size_26_fh, \
             open(motiflocator_output_filename, 'w') as motiflocator_output_fh:
 
+        # Store all FilterINCLUSiveMotifsOnLength objects for the requested motifs.
+        # Set different bp_upstream and bp_downstream settings (how much reference sequences to add before and after
+        # the mutation position) based on the motif length so not too much excess nucleotides need to be scored which
+        # won't affect the delta motif score around the mutation position.
         filtered_inclusive_motifs_on_length_dict = dict()
 
         # Get all motifs with a motif length smaller than or equal to 15 in a FilterINCLUSiveMotifsOnLength() object.

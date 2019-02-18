@@ -72,7 +72,8 @@ def main():
                        action='store',
                        type=str,
                        required=True,
-                       help='VCF output file with mutations (first 5 columns are written in VCF format, rest of the line will be the content of the original line).')
+                       help='VCF output file with mutations (first 5 columns are written in VCF format, '
+                            'rest of the line will be the content of the original line).')
 
     args = parser.parse_args()
 

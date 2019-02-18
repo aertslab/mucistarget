@@ -181,8 +181,8 @@ def calculate_motiflocator_delta_scores(fasta_string,
                 if is_wt:
                     # For wildtype sequence.
 
-                    # The highest possible motif end position we care about ends at that position where the first
-                    # position of the motif overlaps with the last position of the reference sequence with will be
+                    # The highest possible motif end position we care about, ends at that position where the first
+                    # position of the motif overlaps with the last position of the reference sequence which will be
                     # altered by the mutation.
                     highest_motif_end_pos_to_consider = (
                         (bp_upstream + 1) +
@@ -199,8 +199,8 @@ def calculate_motiflocator_delta_scores(fasta_string,
                 else:
                     # For mutated sequence.
 
-                    # The highest possible motif end position we care about ends at that position where the first
-                    # position of the motif overlaps with the last position of the mutant sequence with will be altered
+                    # The highest possible motif end position we care about, ends at that position where the first
+                    # position of the motif overlaps with the last position of the mutant sequence which will be altered
                     # by the mutation.
                     highest_motif_end_pos_to_consider = (
                         (bp_upstream + 1) +
