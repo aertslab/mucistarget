@@ -573,7 +573,7 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
 
 def main():
-    default_motif_collection_version = 'v7'
+    default_motif_collection_version = 'v9'
     default_min_clusterbuster_crm_score_threshold = 0.00
     default_min_motiflocator_score_threshold = 0.80
 
@@ -674,9 +674,9 @@ def main():
         action='store',
         type=str,
         required=False,
-        choices=['v7', 'v8'],
+        choices=['v7', 'v8', 'v9'],
         default=default_motif_collection_version,
-        help='Motif collection to use: "v7" (default) or "v8".'
+        help='Motif collection to use: "v7", "v8" or "v9" (default).'
     )
 
     assembly_group = parser.add_argument_group(

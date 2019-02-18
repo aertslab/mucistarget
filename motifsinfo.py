@@ -561,8 +561,8 @@ def main():
         action='store',
         type=str,
         required=True,
-        choices=['v7', 'v8'],
-        help='Motif collection to use: "v7" or "v8".'
+        choices=['v7', 'v8', 'v9'],
+        help='Motif collection to use: "v7", "v8" or "v9".'
     )
 
     args = parser.parse_args()
