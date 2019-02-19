@@ -103,7 +103,7 @@ class GenomicFasta:
         Get chromosome size for the requested chromosome.
 
         :param chrom: Chromosome name.
-        :return: Chromosome size (or 0 if chromsome name was not found).
+        :return: Chromosome size (or 0 if chromosome name was not found).
         """
         return self.chrom_sizes_dict.get(chrom, 0)
 

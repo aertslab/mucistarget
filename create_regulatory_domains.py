@@ -160,14 +160,14 @@ class ChromSizes:
 
                 columns = line.rstrip('\n').split()
                 if len(columns) == 2:
-                    # Save chromosome name and chromsome size in dictionary.
+                    # Save chromosome name and chromosome size in dictionary.
                     chrom_sizes_dict[columns[0]] = int(columns[1])
 
         return ChromSizes(chrom_sizes_dict)
 
     def get_chrom_size_for_chrom(self, chrom):
         """
-        Get chromsome length for specified chromosome name.
+        Get chromosome length for specified chromosome name.
 
         :param chrom: chromosome name for which you want to know the length.
 
@@ -221,7 +221,7 @@ class GeneTSS:
                 # If the TSS is different, take the smallest one first.
                 return self.tss < other.tss
         else:
-            # If the chromsome name is not the same, check which one is comes first.
+            # If the chromosome name is not the same, check which one is comes first.
             return self.chrom < other.chrom
 
 
