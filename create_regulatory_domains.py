@@ -719,35 +719,39 @@ def main():
         description='Create BED file with regulatory domains from file with TSS information for each gene.'
     )
 
-    parser.add_argument('--basal-up',
+    parser.add_argument('-u',
+                        '--basal-up',
                         dest='basal_up',
                         action='store',
                         type=int,
                         required=False,
                         default=default_basal_up,
-                        help='number of bases upstream of TSS to create a basal domain region '
+                        help='Number of bases upstream of TSS to create a basal domain region '
                              '(default: "{0:d}").'.format(default_basal_up)
                         )
-    parser.add_argument('--basal-down',
+    parser.add_argument('-d',
+                        '--basal-down',
                         dest='basal_down',
                         action='store',
                         type=int,
                         required=False,
                         default=default_basal_down,
-                        help='number of bases downstream of TSS to create a basal domain region '
+                        help='Number of bases downstream of TSS to create a basal domain region '
                              '(default: "{0:d}").'.format(default_basal_down)
                         )
-    parser.add_argument('--max-ext',
+    parser.add_argument('-e',
+                        '--max-ext',
                         dest='maximum_extension',
                         action='store',
                         type=int,
                         required=False,
                         default=default_maximum_extension,
-                        help='maximum extension size in base pairs a regulatory domain can be '
+                        help='Maximum extension size in base pairs a regulatory domain can be '
                              'extended if it did not encounter a basal domain of the nearest gene. '
                              '(default: "{0:d}").'.format(default_maximum_extension)
                         )
-    parser.add_argument('--genes-tss',
+    parser.add_argument('-i',
+                        '--genes-tss',
                         dest='genes_tss_filename',
                         action='store',
                         type=str,
@@ -758,7 +762,8 @@ def main():
                              'which is used as input to create the regulatory domains. '
                              '(default: "{0:s}").'.format(default_genes_tss_filename)
                         )
-    parser.add_argument('--regdoms',
+    parser.add_argument('-o',
+                        '--regdoms',
                         dest='regulatory_domains_bed_filename',
                         action='store',
                         type=str,
