@@ -646,39 +646,42 @@ def create_basal_plus_extension_regdoms(genes_tss_list,
 
     # Loop over GenesTSSList.
     for curr_gene_tss in genes_tss_list:
-        if curated_reg_doms.get_curated_reg_doms_for_gene(curr_gene_tss.name):
-            # If the current GeneTSS has a curated regulatory domain, do not add them to the reg_doms_list_per_chrom
-            # yet. They will be added after all genes with non-curated regulatory domains are added.
-            curr_regdom = curated_reg_doms.get_curated_reg_doms_for_gene(curr_gene_tss.name)
-            curated_reg_doms_list_to_add_per_chrom[curr_gene_tss.chrom].append(curr_regdom)
-        else:
-            # Create a regulatory domain based on the current GeneTSS.
-            curr_regdom = RegDom(chrom=curr_gene_tss.chrom,
-                                 chrom_start=None,
-                                 chrom_end=None,
-                                 name=curr_gene_tss.name,
-                                 tss=curr_gene_tss.tss,
-                                 strand=curr_gene_tss.strand,
-                                 basal_up=basal_up,
-                                 basal_down=basal_down,
-                                 chrom_sizes=chrom_sizes)
+        if chrom_sizes.chrom_sizes_dict.get(curr_gene_tss.chrom):
+            # Only include regulatory domains for genes for which the chromosome name is listed in the chromosome file.
 
-            reg_doms_list_per_chrom[curr_gene_tss.chrom].append(curr_regdom)
+            if curated_reg_doms.get_curated_reg_doms_for_gene(curr_gene_tss.name):
+                # If the current GeneTSS has a curated regulatory domain, do not add them to the reg_doms_list_per_chrom
+                # yet. They will be added after all genes with non-curated regulatory domains are added.
+                curr_regdom = curated_reg_doms.get_curated_reg_doms_for_gene(curr_gene_tss.name)
+                curated_reg_doms_list_to_add_per_chrom[curr_gene_tss.chrom].append(curr_regdom)
+            else:
+                # Create a regulatory domain based on the current GeneTSS.
+                curr_regdom = RegDom(chrom=curr_gene_tss.chrom,
+                                     chrom_start=None,
+                                     chrom_end=None,
+                                     name=curr_gene_tss.name,
+                                     tss=curr_gene_tss.tss,
+                                     strand=curr_gene_tss.strand,
+                                     basal_up=basal_up,
+                                     basal_down=basal_down,
+                                     chrom_sizes=chrom_sizes)
 
-        # Store basal regulatory domain start and end for the current regulatory domain per chromosome.
-        basal_starts_per_chrom_dict[curr_gene_tss.chrom].append(curr_regdom.basal_start)
-        basal_ends_per_chrom_dict[curr_gene_tss.chrom].append(curr_regdom.basal_end)
+                reg_doms_list_per_chrom[curr_gene_tss.chrom].append(curr_regdom)
 
-        # Store the gene index for the current GeneTSS in the per chromosome list
-        # in basal_starts_per_chrom_dict and basal_ends_per_chrom_dict, so later
-        # we will be able to get all basal start locations before a certain TSS of
-        # a gene and all basal end locations of a certain TSS, so we do not extend
-        # a regulatory domain to far.
-        gene_idx_in_per_chrom_dicts_dict[
-            (curr_gene_tss.name,
-             curr_gene_tss.chrom,
-             curr_gene_tss.tss,
-             curr_gene_tss.strand)] = len(basal_starts_per_chrom_dict[curr_gene_tss.chrom]) - 1
+            # Store basal regulatory domain start and end for the current regulatory domain per chromosome.
+            basal_starts_per_chrom_dict[curr_gene_tss.chrom].append(curr_regdom.basal_start)
+            basal_ends_per_chrom_dict[curr_gene_tss.chrom].append(curr_regdom.basal_end)
+
+            # Store the gene index for the current GeneTSS in the per chromosome list
+            # in basal_starts_per_chrom_dict and basal_ends_per_chrom_dict, so later
+            # we will be able to get all basal start locations before a certain TSS of
+            # a gene and all basal end locations of a certain TSS, so we do not extend
+            # a regulatory domain to far.
+            gene_idx_in_per_chrom_dicts_dict[
+                (curr_gene_tss.name,
+                 curr_gene_tss.chrom,
+                 curr_gene_tss.tss,
+                 curr_gene_tss.strand)] = len(basal_starts_per_chrom_dict[curr_gene_tss.chrom]) - 1
 
     # Loop over all regulatory domains per chromosome.
     for chrom in reg_doms_list_per_chrom:
