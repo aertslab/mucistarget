@@ -19,6 +19,11 @@ default_genes_tss_filename = os.path.join(os.path.dirname(__file__),
                                           'data',
                                           'regulatory_domains',
                                           'hg19.great3.0.genes.txt')
+default_chrom_sizes_filename = os.path.join(os.path.dirname(__file__),
+                                            'data',
+                                            'genomic_fasta',
+                                            'hg19.chrom.sizes')
+default_assembly = 'hg19'
 
 default_maximum_extension = 1000000
 default_basal_up = 5000
@@ -30,7 +35,7 @@ class ChromSizes:
     Set and get chromosome lengths.
     """
 
-    def __init__(self, chrom_sizes_dict=None):
+    def __init__(self, chrom_sizes_dict):
         """
         Define chromosome sizes.
 
@@ -38,105 +43,7 @@ class ChromSizes:
 
         :return: ChromSizes object
         """
-        if chrom_sizes_dict:
-            self.chrom_sizes_dict = chrom_sizes_dict
-        else:
-            # If no chromosome sizes where specified, use the following (chromosome sizes for hg19).
-            self.chrom_sizes_dict = {
-                'chr1': 249250621,
-                'chr10': 135534747,
-                'chr11': 135006516,
-                'chr11_gl000202_random': 40103,
-                'chr12': 133851895,
-                'chr13': 115169878,
-                'chr14': 107349540,
-                'chr15': 102531392,
-                'chr16': 90354753,
-                'chr17': 81195210,
-                'chr17_ctg5_hap1': 1680828,
-                'chr17_gl000203_random': 37498,
-                'chr17_gl000204_random': 81310,
-                'chr17_gl000205_random': 174588,
-                'chr17_gl000206_random': 41001,
-                'chr18': 78077248,
-                'chr18_gl000207_random': 4262,
-                'chr19': 59128983,
-                'chr19_gl000208_random': 92689,
-                'chr19_gl000209_random': 159169,
-                'chr1_gl000191_random': 106433,
-                'chr1_gl000192_random': 547496,
-                'chr2': 243199373,
-                'chr20': 63025520,
-                'chr21': 48129895,
-                'chr21_gl000210_random': 27682,
-                'chr22': 51304566,
-                'chr3': 198022430,
-                'chr4': 191154276,
-                'chr4_ctg9_hap1': 590426,
-                'chr4_gl000193_random': 189789,
-                'chr4_gl000194_random': 191469,
-                'chr5': 180915260,
-                'chr6': 171115067,
-                'chr6_apd_hap1': 4622290,
-                'chr6_cox_hap2': 4795371,
-                'chr6_dbb_hap3': 4610396,
-                'chr6_mann_hap4': 4683263,
-                'chr6_mcf_hap5': 4833398,
-                'chr6_qbl_hap6': 4611984,
-                'chr6_ssto_hap7': 4928567,
-                'chr7': 159138663,
-                'chr7_gl000195_random': 182896,
-                'chr8': 146364022,
-                'chr8_gl000196_random': 38914,
-                'chr8_gl000197_random': 37175,
-                'chr9': 141213431,
-                'chr9_gl000198_random': 90085,
-                'chr9_gl000199_random': 169874,
-                'chr9_gl000200_random': 187035,
-                'chr9_gl000201_random': 36148,
-                'chrM': 16571,
-                'chrUn_gl000211': 166566,
-                'chrUn_gl000212': 186858,
-                'chrUn_gl000213': 164239,
-                'chrUn_gl000214': 137718,
-                'chrUn_gl000215': 172545,
-                'chrUn_gl000216': 172294,
-                'chrUn_gl000217': 172149,
-                'chrUn_gl000218': 161147,
-                'chrUn_gl000219': 179198,
-                'chrUn_gl000220': 161802,
-                'chrUn_gl000221': 155397,
-                'chrUn_gl000222': 186861,
-                'chrUn_gl000223': 180455,
-                'chrUn_gl000224': 179693,
-                'chrUn_gl000225': 211173,
-                'chrUn_gl000226': 15008,
-                'chrUn_gl000227': 128374,
-                'chrUn_gl000228': 129120,
-                'chrUn_gl000229': 19913,
-                'chrUn_gl000230': 43691,
-                'chrUn_gl000231': 27386,
-                'chrUn_gl000232': 40652,
-                'chrUn_gl000233': 45941,
-                'chrUn_gl000234': 40531,
-                'chrUn_gl000235': 34474,
-                'chrUn_gl000236': 41934,
-                'chrUn_gl000237': 45867,
-                'chrUn_gl000238': 39939,
-                'chrUn_gl000239': 33824,
-                'chrUn_gl000240': 41933,
-                'chrUn_gl000241': 42152,
-                'chrUn_gl000242': 43523,
-                'chrUn_gl000243': 43341,
-                'chrUn_gl000244': 39929,
-                'chrUn_gl000245': 36651,
-                'chrUn_gl000246': 38154,
-                'chrUn_gl000247': 36422,
-                'chrUn_gl000248': 39786,
-                'chrUn_gl000249': 38502,
-                'chrX': 155270560,
-                'chrY': 59373566
-            }
+        self.chrom_sizes_dict = chrom_sizes_dict
 
     @staticmethod
     def load_chrom_sizes_file(chrom_sizes_filename):
@@ -279,8 +186,7 @@ class RegDom:
     Create a regulatory domain.
     """
 
-    def __init__(self, chrom, chrom_start, chrom_end, name, tss, strand, basal_up=5000, basal_down=1000,
-                 chrom_sizes=ChromSizes()):
+    def __init__(self, chrom, chrom_start, chrom_end, name, tss, strand, basal_up, basal_down, chrom_sizes):
         """
         Create a regulatory domain.
 
@@ -353,11 +259,22 @@ class RegDom:
 
 class CuratedRegDoms:
     """
-    List of curated regulatory domains for hg19.
+    List of curated regulatory domains.
     """
-    def __init__(self, chrom_sizes=ChromSizes()):
+
+    def __init__(self, chrom_sizes, assembly):
+        self.curated_reg_doms_dict = dict()
+        self.chrom_sizes = chrom_sizes
+        self.assembly = assembly
+
+        if assembly == 'hg19':
+            self._add_curated_reg_doms_hg19()
+        elif assembly == 'hg38':
+            self._add_curated_reg_doms_hg38()
+
+    def _add_curated_reg_doms_hg19(self):
         """
-        Create a list of curated regulatory domains for hg19:
+        Add list of curated regulatory domains for hg19:
           http://bejerano.stanford.edu/help/display/GREAT/Association+Rules#AssociationRules-CuratedRegulatoryDomains
 
             Sonic hedgehog long-range enhancer:
@@ -376,118 +293,284 @@ class CuratedRegDoms:
                 HBD: chr11:5253302-5314124
                 HBG1: chr11:5260859-5314124
                 HBE1: chr11:5276088-5314124
-
-        :param chrom_sizes: ChromSizes object with chromosome lengths.
-
-        :return: CuratedRegDoms object
         """
 
-        self.curated_reg_doms_dict = dict()
-
         # Sonic hedgehog long-range enhancer.
-        self.curated_reg_doms_dict['SHH'] = RegDom(chrom='chr7',
-                                                   chrom_start=155438203,
-                                                   chrom_end=156584569,
-                                                   name='SHH',
-                                                   tss=155604967,
-                                                   strand='-',
-                                                   basal_up=None,
-                                                   basal_down=None,
-                                                   chrom_sizes=chrom_sizes)
+        self.curated_reg_doms_dict['SHH'] = RegDom(
+            chrom='chr7',
+            chrom_start=155438203,
+            chrom_end=156584569,
+            name='SHH',
+            tss=155604967,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
 
         # HOXD global control region.
-        self.curated_reg_doms_dict['KIAA1715'] = RegDom(chrom='chr2',
-                                                        chrom_start=176714855,
-                                                        chrom_end=176947690,
-                                                        name='KIAA1715',
-                                                        tss=176867073,
-                                                        strand='-',
-                                                        basal_up=None,
-                                                        basal_down=None,
-                                                        chrom_sizes=chrom_sizes)
-        self.curated_reg_doms_dict['EVX2'] = RegDom(chrom='chr2',
-                                                    chrom_start=176714855,
-                                                    chrom_end=176953690,
-                                                    name='EVX2',
-                                                    tss=176948641,
-                                                    strand='-',
-                                                    basal_up=None,
-                                                    basal_down=None,
-                                                    chrom_sizes=chrom_sizes)
-        self.curated_reg_doms_dict['HOXD13'] = RegDom(chrom='chr2',
-                                                      chrom_start=176714855,
-                                                      chrom_end=176959529,
-                                                      name='HOXD13',
-                                                      tss=176957618,
-                                                      strand='+',
-                                                      basal_up=None,
-                                                      basal_down=None,
-                                                      chrom_sizes=chrom_sizes)
-        self.curated_reg_doms_dict['HOXD12'] = RegDom(chrom='chr2',
-                                                      chrom_start=176714855,
-                                                      chrom_end=176967083,
-                                                      name='HOXD12',
-                                                      tss=176964457,
-                                                      strand='+',
-                                                      basal_up=None,
-                                                      basal_down=None,
-                                                      chrom_sizes=chrom_sizes)
-        self.curated_reg_doms_dict['HOXD11'] = RegDom(chrom='chr2',
-                                                      chrom_start=176714855,
-                                                      chrom_end=176976491,
-                                                      name='HOXD11',
-                                                      tss=176972013,
-                                                      strand='+',
-                                                      basal_up=None,
-                                                      basal_down=None,
-                                                      chrom_sizes=chrom_sizes)
-        self.curated_reg_doms_dict['HOXD10'] = RegDom(chrom='chr2',
-                                                      chrom_start=176714855,
-                                                      chrom_end=176982491,
-                                                      name='HOXD10',
-                                                      tss=176981306,
-                                                      strand='+',
-                                                      basal_up=None,
-                                                      basal_down=None,
-                                                      chrom_sizes=chrom_sizes)
+        self.curated_reg_doms_dict['KIAA1715'] = RegDom(
+            chrom='chr2',
+            chrom_start=176714855,
+            chrom_end=176947690,
+            name='KIAA1715',
+            tss=176867073,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['EVX2'] = RegDom(
+            chrom='chr2',
+            chrom_start=176714855,
+            chrom_end=176953690,
+            name='EVX2',
+            tss=176948641,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HOXD13'] = RegDom(
+            chrom='chr2',
+            chrom_start=176714855,
+            chrom_end=176959529,
+            name='HOXD13',
+            tss=176957618,
+            strand='+',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HOXD12'] = RegDom(
+            chrom='chr2',
+            chrom_start=176714855,
+            chrom_end=176967083,
+            name='HOXD12',
+            tss=176964457,
+            strand='+',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HOXD11'] = RegDom(
+            chrom='chr2',
+            chrom_start=176714855,
+            chrom_end=176976491,
+            name='HOXD11',
+            tss=176972013,
+            strand='+',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HOXD10'] = RegDom(
+            chrom='chr2',
+            chrom_start=176714855,
+            chrom_end=176982491,
+            name='HOXD10',
+            tss=176981306,
+            strand='+',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
 
         # Beta-globin locus control region.
-        self.curated_reg_doms_dict['HBB'] = RegDom(chrom='chr11',
-                                                   chrom_start=5226931,
-                                                   chrom_end=5314124,
-                                                   name='HBB',
-                                                   tss=5248427,
-                                                   strand='-',
-                                                   basal_up=None,
-                                                   basal_down=None,
-                                                   chrom_sizes=chrom_sizes)
-        self.curated_reg_doms_dict['HBD'] = RegDom(chrom='chr11',
-                                                   chrom_start=5253302,
-                                                   chrom_end=5314124,
-                                                   name='HBD',
-                                                   tss=5255878,
-                                                   strand='-',
-                                                   basal_up=None,
-                                                   basal_down=None,
-                                                   chrom_sizes=chrom_sizes)
-        self.curated_reg_doms_dict['HBG1'] = RegDom(chrom='chr11',
-                                                    chrom_start=5260859,
-                                                    chrom_end=5314124,
-                                                    name='HBG1',
-                                                    tss=5271122,
-                                                    strand='-',
-                                                    basal_up=None,
-                                                    basal_down=None,
-                                                    chrom_sizes=chrom_sizes)
-        self.curated_reg_doms_dict['HBE1'] = RegDom(chrom='chr11',
-                                                    chrom_start=5276088,
-                                                    chrom_end=5314124,
-                                                    name='HBE1',
-                                                    tss=5526834,
-                                                    strand='-',
-                                                    basal_up=None,
-                                                    basal_down=None,
-                                                    chrom_sizes=chrom_sizes)
+        self.curated_reg_doms_dict['HBB'] = RegDom(
+            chrom='chr11',
+            chrom_start=5226931,
+            chrom_end=5314124,
+            name='HBB',
+            tss=5248427,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HBD'] = RegDom(
+            chrom='chr11',
+            chrom_start=5253302,
+            chrom_end=5314124,
+            name='HBD',
+            tss=5255878,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HBG1'] = RegDom(
+            chrom='chr11',
+            chrom_start=5260859,
+            chrom_end=5314124,
+            name='HBG1',
+            tss=5271122,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HBE1'] = RegDom(
+            chrom='chr11',
+            chrom_start=5276088,
+            chrom_end=5314124,
+            name='HBE1',
+            tss=5526834,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+
+    def _add_curated_reg_doms_hg38(self):
+        """
+        Add list of curated regulatory domains for hg38 (lifted over from hg19):
+          http://bejerano.stanford.edu/help/display/GREAT/Association+Rules#AssociationRules-CuratedRegulatoryDomains
+
+            Sonic hedgehog long-range enhancer:
+                SHH: chr7:155130964-156277330
+
+            HOXD global control region:
+                LNPK: chr2:176423101-176655936
+                EVX2: chr2:176423101-176661936
+                HOXD13: chr2:176423101-176667775
+                HOXD12: chr2:176423101-176675329
+                HOXD11: chr2:176423101-176684737
+                HOXD10: chr2:176423101-176690737
+
+            Beta-globin locus control region:
+                HBB: chr11:5183507-5270700
+                HBD: chr11:5209878-5270700
+                HBG1: chr11:5217435-5270700
+                HBE1: chr11:5232664-5270700
+        """
+
+        # Sonic hedgehog long-range enhancer.
+        self.curated_reg_doms_dict['SHH'] = RegDom(
+            chrom='chr7',
+            chrom_start=155130964,
+            chrom_end=156277330,
+            name='SHH',
+            tss=155812272,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+
+        # HOXD global control region.
+        self.curated_reg_doms_dict['LNPK'] = RegDom(
+            chrom='chr2',
+            chrom_start=176423101,
+            chrom_end=176655936,
+            name='LNPK',
+            tss=176002344,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['EVX2'] = RegDom(
+            chrom='chr2',
+            chrom_start=176423101,
+            chrom_end=176661936,
+            name='EVX2',
+            tss=176083912,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HOXD13'] = RegDom(
+            chrom='chr2',
+            chrom_start=176423101,
+            chrom_end=176667775,
+            name='HOXD13',
+            tss=176092890,
+            strand='+',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HOXD12'] = RegDom(
+            chrom='chr2',
+            chrom_start=176423101,
+            chrom_end=176675329,
+            name='HOXD12',
+            tss=176099729,
+            strand='+',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HOXD11'] = RegDom(
+            chrom='chr2',
+            chrom_start=176423101,
+            chrom_end=176684737,
+            name='HOXD11',
+            tss=176104215,
+            strand='+',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HOXD10'] = RegDom(
+            chrom='chr2',
+            chrom_start=176423101,
+            chrom_end=176690737,
+            name='HOXD10',
+            tss=176116578,
+            strand='+',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+
+        # Beta-globin locus control region.
+        self.curated_reg_doms_dict['HBB'] = RegDom(
+            chrom='chr11',
+            chrom_start=5183507,
+            chrom_end=5270700,
+            name='HBB',
+            tss=5227196,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HBD'] = RegDom(
+            chrom='chr11',
+            chrom_start=5209878,
+            chrom_end=5270700,
+            name='HBD',
+            tss=5243656,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HBG1'] = RegDom(
+            chrom='chr11',
+            chrom_start=5217435,
+            chrom_end=5270700,
+            name='HBG1',
+            tss=5249858,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
+        self.curated_reg_doms_dict['HBE1'] = RegDom(
+            chrom='chr11',
+            chrom_start=5232664,
+            chrom_end=5270700,
+            name='HBE1',
+            tss=5505651,
+            strand='-',
+            basal_up=None,
+            basal_down=None,
+            chrom_sizes=self.chrom_sizes
+        )
 
     def get_curated_reg_doms_for_gene(self, gene):
         """
@@ -501,10 +584,11 @@ class CuratedRegDoms:
 
 
 def create_basal_plus_extension_regdoms(genes_tss_list,
-                                        maximum_extension=1000000,
-                                        basal_up=5000,
-                                        basal_down=1000,
-                                        chrom_sizes=ChromSizes()):
+                                        maximum_extension,
+                                        basal_up,
+                                        basal_down,
+                                        chrom_sizes,
+                                        assembly):
     """
     Create regulatory domains from a sorted GenesTSSList object.
 
@@ -538,6 +622,8 @@ def create_basal_plus_extension_regdoms(genes_tss_list,
                 # bp downstream of TSS for setting the basal end of the basal domain.
     :param chrom_sizes:
                 ChromSizes object with chromosome lengths.
+    :param assembly:
+                Assembly name: hg19, hg38, ...
 
     :return: List of RegDom objects per chromosome.
     """
@@ -556,7 +642,7 @@ def create_basal_plus_extension_regdoms(genes_tss_list,
     curated_reg_doms_list_to_add_per_chrom = {chrom: list() for chrom in chrom_sizes.chrom_sizes_dict}
 
     # Get all curated regulatory domains.
-    curated_reg_doms = CuratedRegDoms()
+    curated_reg_doms = CuratedRegDoms(chrom_sizes, assembly)
 
     # Loop over GenesTSSList.
     for curr_gene_tss in genes_tss_list:
@@ -750,6 +836,25 @@ def main():
                              'extended if it did not encounter a basal domain of the nearest gene. '
                              '(default: "{0:d}").'.format(default_maximum_extension)
                         )
+    parser.add_argument('-c',
+                        '--chrom-sizes',
+                        dest='chrom_sizes_filename',
+                        action='store',
+                        type=str,
+                        required=False,
+                        default=default_chrom_sizes_filename,
+                        help='TAB-separated file with chromosome names and chromosome sizes. '
+                             '(default: "{0:s}").'.format(default_chrom_sizes_filename)
+                        )
+    parser.add_argument('-a',
+                        '--assembly',
+                        dest='assembly',
+                        action='store',
+                        type=str,
+                        required=False,
+                        default='hg19',
+                        help='Assembly name. (default: "{0:s}").'.format(default_assembly)
+                        )
     parser.add_argument('-i',
                         '--genes-tss',
                         dest='genes_tss_filename',
@@ -781,11 +886,14 @@ def main():
 
     # Calculate the regulatory domains for each gene.
     # See "create_basal_plus_extension_regdoms" for more information.
-    reg_doms_list_per_chrom = create_basal_plus_extension_regdoms(genes_tss_list=genes_tss_list,
-                                                                  maximum_extension=args.maximum_extension,
-                                                                  basal_up=args.basal_up,
-                                                                  basal_down=args.basal_down,
-                                                                  chrom_sizes=ChromSizes())
+    reg_doms_list_per_chrom = create_basal_plus_extension_regdoms(
+        genes_tss_list=genes_tss_list,
+        maximum_extension=args.maximum_extension,
+        basal_up=args.basal_up,
+        basal_down=args.basal_down,
+        chrom_sizes=ChromSizes.load_chrom_sizes_file(args.chrom_sizes_filename),
+        assembly=args.assembly
+    )
 
     if args.regulatory_domains_bed_filename in ('-', 'stdout'):
         regulatory_domains_output_bed_fh = sys.stdout
