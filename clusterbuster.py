@@ -4,7 +4,7 @@ Purpose :      Run Cluster-Buster and get Cluster-Buster CRM and motif delta sco
 Copyright (C): 2016-2019 - Gert Hulselmans
 """
 
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
 
 import command
 import mutations
@@ -211,9 +211,9 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
     consider_current_crm = False
 
     # Parse Cluster-Buster output.
-    with BytesIO(clusterbuster_command_stdout_data) as clusterbuster_fh:
+    with TextIOWrapper(buffer=BytesIO(clusterbuster_command_stdout_data), encoding='utf-8') as clusterbuster_fh:
         for clusterbuster_line in clusterbuster_fh:
-            clusterbuster_line = str(clusterbuster_line).rstrip()
+            clusterbuster_line = clusterbuster_line.rstrip()
 
             if clusterbuster_line.startswith('>'):
                 fasta_seq_id = clusterbuster_line.split(' ')[0][1:]

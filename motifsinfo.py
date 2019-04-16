@@ -546,7 +546,7 @@ class FilterINCLUSiveMotifsOnLength:
 
         :return:
         """
-        self.inclusive_matrix_fh.write(self.inclusive_pwms)
+        self.inclusive_matrix_fh.write(self.inclusive_pwms.encode('utf-8'))
         self.inclusive_matrix_fh.flush()
 
 

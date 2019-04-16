@@ -6,7 +6,7 @@ Copyright (C): 2016-2019 - Gert Hulselmans
 
 import os.path
 
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
 
 import command
 import mutations
@@ -135,9 +135,9 @@ def calculate_motiflocator_delta_scores(fasta_string,
     motiflocator_max_scores_and_consensus_for_wt_mut = dict()
     fasta_seq_id_to_from_fasta_seq_id_output_dict = dict()
 
-    with BytesIO(motiflocator_command_stdout_data) as gff_fh:
+    with TextIOWrapper(buffer=BytesIO(motiflocator_command_stdout_data), encoding='utf-8') as gff_fh:
         for gff_line in gff_fh:
-            columns = str(gff_line).split('\t')
+            columns = gff_line.rstrip().split('\t')
 
             if len(columns) == 9:
                 # FASTA sequence ID constructed by VCFmut.make_fasta_for_wt_and_mut().
