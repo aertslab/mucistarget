@@ -165,6 +165,13 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
     import mutations
 
     with open(mut_to_associated_genes_output_filename, 'w') as mut_to_associated_genes_fh:
+        # Sort TADs identifiers.
+        tads_ids = (
+            sorted(mutations.VCFmut.tads_start_end_array_per_chrom)
+            if mutations.VCFmut.tads_start_end_array_per_chrom
+            else None
+        )
+
         # Write header to the output file.
         print('# chrom',
               'start',
@@ -174,11 +181,11 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
               'mutation ID',
               'associated gene',
               'distance to TSS',
-              '\t'.join(['in ' + primary_tissue_or_cell_type + ' TADs'
-                         for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+              '\t'.join(['in ' + tads_id + ' TADs'
+                         for tads_id in tads_ids
                          ]
                         )
-              if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+              if tads_ids
               else '',
               sep='\t',
               file=mut_to_associated_genes_fh)
@@ -194,14 +201,14 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
                       '\t'.join(
                           ['yes'
                            if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                              primary_tissue_or_cell_type=primary_tissue_or_cell_type,
+                              tads_id=tads_id,
                               tss=tss
                            )
                            else 'no'
-                           for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+                           for tads_id in tads_ids
                            ]
                       )
-                      if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+                      if mutations.VCFmut.tads_start_end_array_per_chrom
                       else '',
                       sep='\t',
                       file=mut_to_associated_genes_fh)
@@ -249,6 +256,13 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
 
     nbr_motifs = len(motif_ids_set)
 
+    # Sort TADs identifiers.
+    tads_ids = (
+        sorted(mutations.VCFmut.tads_start_end_array_per_chrom)
+        if mutations.VCFmut.tads_start_end_array_per_chrom
+        else None
+    )
+
     with open(clusterbuster_output_filename, 'w') as clusterbuster_output_fh:
         # Write header to the output file.
         print('# chrom',
@@ -270,11 +284,11 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
               'delta Cluster-Buster motif score',
               'wildtype consensus sequence',
               'mutant consensus sequence',
-              '\t'.join(['in ' + primary_tissue_or_cell_type + ' TADs'
-                         for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+              '\t'.join(['in ' + tads_id + ' TADs'
+                         for tads_id in tads_ids
                          ]
                         )
-              if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+              if mutations.VCFmut.tads_start_end_array_per_chrom
               else '',
               sep='\t',
               file=clusterbuster_output_fh)
@@ -331,14 +345,14 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
                           '\t'.join(
                               ['yes'
                                if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                                  primary_tissue_or_cell_type=primary_tissue_or_cell_type,
+                                  tads_id=tads_id,
                                   tss=tss
                                )
                                else 'no'
-                               for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+                               for tads_id in tads_ids
                                ]
                           )
-                          if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+                          if mutations.VCFmut.tads_start_end_array_per_chrom
                           else '',
                           sep='\t',
                           file=clusterbuster_output_fh)
@@ -396,6 +410,13 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
     motifsinfo.MotifsInfo.set_motif_collection_version(motif_collection_version=motif_collection_version)
 
     nbr_of_mutations_which_pass_motiflocator_threshold = 0
+
+    # Sort TADs identifiers.
+    tads_ids = (
+        sorted(mutations.VCFmut.tads_start_end_array_per_chrom)
+        if mutations.VCFmut.tads_start_end_array_per_chrom
+        else None
+    )
 
     with tempfile.NamedTemporaryFile() as inclusive_matrix_max_motif_size_15_fh, \
             tempfile.NamedTemporaryFile() as inclusive_matrix_min_motif_size_16_max_motif_size_25_fh, \
@@ -479,11 +500,11 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
               'delta MotifLocator score',
               'wildtype consensus sequence',
               'mutant consensus sequence',
-              '\t'.join(['in ' + primary_tissue_or_cell_type + ' TADs'
-                         for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+              '\t'.join(['in ' + tads_id + ' TADs'
+                         for tads_id in tads_ids
                          ]
                         )
-              if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+              if tads_ids
               else '',
               sep='\t',
               file=motiflocator_output_fh)
@@ -551,14 +572,14 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
                           '\t'.join(
                               ['yes'
                                if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                                  primary_tissue_or_cell_type=primary_tissue_or_cell_type,
+                                  tads_id=tads_id,
                                   tss=tss
                                )
                                else 'no'
-                               for primary_tissue_or_cell_type in mutations.primary_tissues_and_cell_types_with_tads
+                               for tads_id in tads_ids
                                ]
                           )
-                          if mutations.VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types
+                          if mutations.VCFmut.tads_start_end_array_per_chrom
                           else '',
                           sep='\t',
                           file=motiflocator_output_fh)

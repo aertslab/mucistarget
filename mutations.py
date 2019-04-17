@@ -4,6 +4,7 @@ Purpose :      Provide objects and methods to work with mutations in an easy way
 Copyright (C): 2016-2019 - Gert Hulselmans
 """
 
+import glob
 import numpy
 import os.path
 
@@ -90,32 +91,6 @@ genes_tss_filename_dict = {
             'mm10.tss.tsv'
         ),
 }
-# TAD domains in 21 primary human tissues and cell types:
-#   - paper: http://www.cell.com/cell-reports/fulltext/S2211-1247(16)31481-4
-#   - TADs in BED format: data/tads/
-primary_tissues_and_cell_types_with_tads = [
-    'AD',
-    'AO',
-    'BL',
-    'CO',
-    'GM12878',
-    'H1',
-    'HC',
-    'IMR90',
-    'LG',
-    'LI',
-    'LV',
-    'MES',
-    'MSC',
-    'NPC',
-    'OV',
-    'PA',
-    'PO',
-    'RV',
-    'SB',
-    'SX',
-    'TRO',
-]
 
 
 class GenomicFasta:
@@ -150,21 +125,13 @@ class GenomicFasta:
 
 class TADs:
     @staticmethod
-    def load_tads_of_primary_tissue_or_cell_type(primary_tissue_or_cell_type):
+    def load_tads_from_file(tads_filename):
         """
-        Load TADs for the specified primary tissue or cell type and store start and end position of each TAD in a per
-        chromosome numpy array.
+        Load TADs from file and store start and end position of each TAD in a per chromosome numpy array.
 
-        :param primary_tissue_or_cell_type: primary tissue or cell type identifier
+        :param tads_filename: Filename with TADs.
         :return: Dictionary with chromosome names as keys and a numpy array with start and end coordinates as values.
         """
-
-        tads_filename = os.path.join(
-            os.path.dirname(__file__),
-            'data',
-            'tads',
-            'TADs_{0:s}.bed'.format(primary_tissue_or_cell_type)
-        )
 
         tads_chrom_pos_dict = dict()
 
@@ -202,7 +169,7 @@ class VCFmut:
 
     # Load TADs for primary tissues and cell types and store start and end position of each TAD in a per chromosome
     # numpy array.
-    tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types = None
+    tads_start_end_array_per_chrom = None
 
     @staticmethod
     def set_genome_fasta(fasta_filename, assembly):
@@ -273,11 +240,25 @@ class VCFmut:
 
         # Load TADs for primary tissues and cell types and store start and end position of each TAD in a per chromosome
         # numpy array.
-        VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types = dict()
+        VCFmut.tads_start_end_array_per_chrom = dict()
 
-        for primary_tissue_or_cell_type in primary_tissues_and_cell_types_with_tads:
-            VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type] \
-                = TADs.load_tads_of_primary_tissue_or_cell_type(primary_tissue_or_cell_type)
+        tads_filenames_glob = os.path.join(
+            os.path.dirname(__file__),
+            'data',
+            'tads',
+            VCFmut.genomic_fasta.assembly,
+            'TADs_*.bed'
+        )
+
+        # Get all filenames with TADs for the current assembly.
+        tads_filenames = sorted(glob.glob(tads_filenames_glob))
+
+        for tads_filename in tads_filenames:
+            # Extract TADs identifier from TADs filename.
+            tads_id = os.path.basename(tads_filename)[:-4]
+
+            VCFmut.tads_start_end_array_per_chrom[tads_id] \
+                = TADs.load_tads_from_file(tads_filename=tads_filename)
 
     @staticmethod
     def from_mut_id(mut_id):
@@ -800,27 +781,27 @@ class VCFmut:
             )
         )
 
-    def tss_of_associated_gene_in_same_tad_as_mutation(self, primary_tissue_or_cell_type, tss):
+    def tss_of_associated_gene_in_same_tad_as_mutation(self, tads_id, tss):
         """
-        Check if mutations falls in a TAD for a specific primary tissue or cell type and that the TSS of the associated
-        gene falls in the same TAD.
+        Check if mutations falls in TAD of a specific TADs identifier and that the TSS of the associated gene falls in
+        the same TAD.
 
-        :param primary_tissue_or_cell_type: Use TADs for this primary tissue or cell type.
+        :param tads_id: Use TADs identifier
         :param tss: TSS of associated gene.
 
         :return: True or False
         """
 
-        if not VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types:
+        if not VCFmut.tads_start_end_array_per_chrom:
             # If no TADs were loaded, return False.
             return False
 
-        if primary_tissue_or_cell_type not in VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types:
+        if tads_id not in VCFmut.tads_start_end_array_per_chrom:
             raise ValueError(
-                'Unsupported cell line "{0:s}".'.format(primary_tissue_or_cell_type)
+                'Unknown TADs identifier "{0:s}".'.format(tads_id)
             )
 
-        if self.chrom not in VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type]:
+        if self.chrom not in VCFmut.tads_start_end_array_per_chrom[tads_id]:
             # If the chromosome on which the mutation is located, is not available in the TAD, return False.
             return False
 
@@ -835,17 +816,17 @@ class VCFmut:
         #     is greater than or equal to the mutation position.
 
         # If there was any overlap between a TAD and the mutation, return the TAD.
-        mutation_in_which_tad = VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][
-            (VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][:, 0] <= self.start)
+        mutation_in_which_tad = VCFmut.tads_start_end_array_per_chrom[tads_id][self.chrom][
+            (VCFmut.tads_start_end_array_per_chrom[tads_id][self.chrom][:, 0] <= self.start)
             &
-            (VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][:, 1] >= self.start)
+            (VCFmut.tads_start_end_array_per_chrom[tads_id][self.chrom][:, 1] >= self.start)
         ]
 
         # If there was any overlap between a TAD and the TSS of the associated gene, return the TAD.
-        tss_of_gene_in_which_tad = VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][
-            (VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][:, 0] <= tss)
+        tss_of_gene_in_which_tad = VCFmut.tads_start_end_array_per_chrom[tads_id][self.chrom][
+            (VCFmut.tads_start_end_array_per_chrom[tads_id][self.chrom][:, 0] <= tss)
             &
-            (VCFmut.tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types[primary_tissue_or_cell_type][self.chrom][:, 1] >= tss)
+            (VCFmut.tads_start_end_array_per_chrom[tads_id][self.chrom][:, 1] >= tss)
         ]
 
         if numpy.shape(mutation_in_which_tad) == (1, 2) and numpy.shape(tss_of_gene_in_which_tad) == (1, 2):
@@ -859,7 +840,7 @@ class VCFmut:
                 'Mutation "{0:s}" or TSS ({1:d}) overlaps multiple TADs in cell line "{2:s}", which is unsupported.'.format(
                     self.mut_id,
                     tss,
-                    primary_tissue_or_cell_type
+                    tads_id
                 )
             )
 
