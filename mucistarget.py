@@ -181,12 +181,8 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
               'mutation ID',
               'associated gene',
               'distance to TSS',
-              '\t'.join(['in ' + tads_id + ' TADs'
-                         for tads_id in tads_ids
-                         ]
-                        )
-              if tads_ids
-              else '',
+              'in #TADs of {0:d}'.format(len(tads_ids)) if tads_ids else '',
+              *['in ' + tads_id + ' TADs' for tads_id in tads_ids] if tads_ids else '',
               sep='\t',
               file=mut_to_associated_genes_fh)
 
@@ -195,21 +191,21 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
             for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.items():
                 distance_to_tss, tss = distance_to_tss_and_tss
 
+                tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list = [
+                    1
+                    if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                        tads_id=tads_id,
+                        tss=tss
+                    )
+                    else 0
+                    for tads_id in tads_ids
+                ]
+
                 print(vcf_mut,
                       associated_gene,
                       '{0:+}'.format(distance_to_tss) if distance_to_tss else '',
-                      '\t'.join(
-                          ['yes'
-                           if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                              tads_id=tads_id,
-                              tss=tss
-                           )
-                           else 'no'
-                           for tads_id in tads_ids
-                           ]
-                      )
-                      if mutations.VCFmut.tads_start_end_array_per_chrom
-                      else '',
+                      sum(tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list) if tads_ids else '',
+                      *tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list if tads_ids else '',
                       sep='\t',
                       file=mut_to_associated_genes_fh)
 
@@ -284,12 +280,8 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
               'delta Cluster-Buster motif score',
               'wildtype consensus sequence',
               'mutant consensus sequence',
-              '\t'.join(['in ' + tads_id + ' TADs'
-                         for tads_id in tads_ids
-                         ]
-                        )
-              if mutations.VCFmut.tads_start_end_array_per_chrom
-              else '',
+              'in #TADs of {0:d}'.format(len(tads_ids)) if tads_ids else '',
+              *['in ' + tads_id + ' TADs' for tads_id in tads_ids] if tads_ids else '',
               sep='\t',
               file=clusterbuster_output_fh)
 
@@ -326,34 +318,32 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
 
                     distance_to_tss, tss = distance_to_tss_and_tss
 
+                    tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list = [
+                        1
+                        if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                            tads_id=tads_id,
+                            tss=tss
+                        )
+                        else 0
+                        for tads_id in tads_ids
+                    ]
+
                     print(vcf_mut,
                           associated_gene,
                           '{0:+}'.format(distance_to_tss) if distance_to_tss else '',
-                          '\t'.join([motif_id,
-                                     motifsinfo.MotifsInfo.get_motif_name(motif_id),
-                                     ';'.join(tfs if tfs else ['']),
-                                     str(clusterbuster_delta_score.wt_crm_score),
-                                     str(clusterbuster_delta_score.mut_crm_score),
-                                     str(clusterbuster_delta_score.crm_delta_score),
-                                     str(clusterbuster_delta_score.wt_motif_score),
-                                     str(clusterbuster_delta_score.mut_motif_score),
-                                     str(clusterbuster_delta_score.motif_delta_score),
-                                     clusterbuster_delta_score.wt_consensus,
-                                     clusterbuster_delta_score.mut_consensus,
-                                     ]
-                                    ),
-                          '\t'.join(
-                              ['yes'
-                               if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                                  tads_id=tads_id,
-                                  tss=tss
-                               )
-                               else 'no'
-                               for tads_id in tads_ids
-                               ]
-                          )
-                          if mutations.VCFmut.tads_start_end_array_per_chrom
-                          else '',
+                          motif_id,
+                          motifsinfo.MotifsInfo.get_motif_name(motif_id),
+                          ';'.join(tfs if tfs else ['']),
+                          str(clusterbuster_delta_score.wt_crm_score),
+                          str(clusterbuster_delta_score.mut_crm_score),
+                          str(clusterbuster_delta_score.crm_delta_score),
+                          str(clusterbuster_delta_score.wt_motif_score),
+                          str(clusterbuster_delta_score.mut_motif_score),
+                          str(clusterbuster_delta_score.motif_delta_score),
+                          clusterbuster_delta_score.wt_consensus,
+                          clusterbuster_delta_score.mut_consensus,
+                          sum(tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list) if tads_ids else '',
+                          *tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list if tads_ids else '',
                           sep='\t',
                           file=clusterbuster_output_fh)
 
@@ -500,12 +490,8 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
               'delta MotifLocator score',
               'wildtype consensus sequence',
               'mutant consensus sequence',
-              '\t'.join(['in ' + tads_id + ' TADs'
-                         for tads_id in tads_ids
-                         ]
-                        )
-              if tads_ids
-              else '',
+              'in #TADs of {0:d}'.format(len(tads_ids)) if tads_ids else '',
+              *['in ' + tads_id + ' TADs' for tads_id in tads_ids] if tads_ids else '',
               sep='\t',
               file=motiflocator_output_fh)
 
@@ -556,31 +542,29 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
                     distance_to_tss, tss = distance_to_tss_and_tss
 
+                    tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list = [
+                        1
+                        if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                            tads_id=tads_id,
+                            tss=tss
+                        )
+                        else 0
+                        for tads_id in tads_ids
+                    ]
+
                     print(vcf_mut,
                           associated_gene,
                           '{0:+}'.format(distance_to_tss) if distance_to_tss else '',
-                          '\t'.join([motif_id,
-                                     motifsinfo.MotifsInfo.get_motif_name(motif_id),
-                                     ';'.join(tfs if tfs else ['']),
-                                     str(motiflocator_delta.wt_score),
-                                     str(motiflocator_delta.mut_score),
-                                     str(motiflocator_delta.delta_score),
-                                     motiflocator_delta.wt_consensus,
-                                     motiflocator_delta.mut_consensus,
-                                     ]
-                                    ),
-                          '\t'.join(
-                              ['yes'
-                               if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                                  tads_id=tads_id,
-                                  tss=tss
-                               )
-                               else 'no'
-                               for tads_id in tads_ids
-                               ]
-                          )
-                          if mutations.VCFmut.tads_start_end_array_per_chrom
-                          else '',
+                          motif_id,
+                          motifsinfo.MotifsInfo.get_motif_name(motif_id),
+                          ';'.join(tfs if tfs else ['']),
+                          str(motiflocator_delta.wt_score),
+                          str(motiflocator_delta.mut_score),
+                          str(motiflocator_delta.delta_score),
+                          motiflocator_delta.wt_consensus,
+                          motiflocator_delta.mut_consensus,
+                          sum(tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list) if tads_ids else '',
+                          *tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list if tads_ids else '',
                           sep='\t',
                           file=motiflocator_output_fh)
 
