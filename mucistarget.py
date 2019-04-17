@@ -781,10 +781,13 @@ def main():
     # Fill MotifsInfo class with content for the chosen motif collection version.
     motifsinfo.MotifsInfo.set_motif_collection_version(motif_collection_version=args.motif_collection_version)
 
-    # Set genomic fasta for VCFmut class.
-    mutations.VCFmut.set_genomic_fasta(fasta_filename=mutations.fasta_filename_dict[args.assembly])
+    # Set genomic fasta and assembly for VCFmut class.
+    mutations.VCFmut.set_genome_fasta(
+        fasta_filename=mutations.fasta_filename_dict[args.assembly],
+        assembly=args.assembly
+    )
 
-    if args.assembly == 'hg19':
+    if args.assembly == 'hg19' or args.assembly == 'hg38' or args.assembly == 'mm9' or args.assembly == 'mm10':
         # Set regulatory domains and TADs for VCFmut class.
         mutations.VCFmut.set_reg_doms()
         mutations.VCFmut.set_tads()

@@ -29,7 +29,7 @@ fasta_filename_dict = {
         os.path.dirname(__file__),
             'data',
             'genomic_fasta',
-            'Homo_sapiens_assembly19_sorted.fasta'
+            'hg19.fa'
         ),
     'hg38': os.path.join(
         os.path.dirname(__file__),
@@ -52,6 +52,44 @@ fasta_filename_dict = {
 }
 
 
+genes_tss_filename_dict = {
+    'dm3': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'regulatory_domains',
+            'dm3.tss.tsv'
+        ),
+    'dm6': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'regulatory_domains',
+            'dm6.tss.tsv'
+        ),
+    'hg19': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'regulatory_domains',
+            'hg19.tss.tsv'
+        ),
+    'hg38': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'regulatory_domains',
+            'hg38.tss.tsv'
+        ),
+    'mm9': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'regulatory_domains',
+            'mm9.tss.tsv'
+        ),
+    'mm10': os.path.join(
+        os.path.dirname(__file__),
+            'data',
+            'regulatory_domains',
+            'mm10.tss.tsv'
+        ),
+}
 # TAD domains in 21 primary human tissues and cell types:
 #   - paper: http://www.cell.com/cell-reports/fulltext/S2211-1247(16)31481-4
 #   - TADs in BED format: data/tads/
@@ -81,13 +119,15 @@ primary_tissues_and_cell_types_with_tads = [
 
 
 class GenomicFasta:
-    def __init__(self, fasta_filename):
+    def __init__(self, fasta_filename, assembly):
         self.fasta_sequences = pyfasta.Fasta(fasta_filename)
 
         # Calculate chromosome sizes from file index positions for end and start in flattened FASTA file.
         self.chrom_sizes_dict = {
             chrom: index_pos[1] - index_pos[0] for chrom, index_pos in self.fasta_sequences.index.items()
         }
+
+        self.assembly = assembly
 
     def is_chromosome_name(self, chrom):
         """
@@ -165,20 +205,21 @@ class VCFmut:
     tads_start_end_array_per_chrom_for_primary_tissues_and_cell_types = None
 
     @staticmethod
-    def set_genomic_fasta(fasta_filename):
+    def set_genome_fasta(fasta_filename, assembly):
         """
-        Set genomic fasta file for VCFmut class before making VCFmut instances.
+        Set genomic fasta file and assembly version for VCFmut class before making VCFmut instances.
 
-        :param fasta_filename: Genomic FASTA filename
+        :param fasta_filename: Genomic FASTA filename.
+        :param assembly: Assembly version.
         :return: 
         """
 
-        VCFmut.genomic_fasta = GenomicFasta(fasta_filename=fasta_filename)
+        VCFmut.genomic_fasta = GenomicFasta(fasta_filename=fasta_filename, assembly=assembly)
 
     @staticmethod
     def set_reg_doms():
         """
-        Set regulatory domains for human (hg19) VCFmut class.
+        Set regulatory domains for VCFmut class.
 
         :return: 
         """
@@ -186,7 +227,7 @@ class VCFmut:
         # Create a list of GeneTSS objects sorted by chromosome name,
         # TSS, strand and gene name from a TAB-separated file.
         genes_tss_list = create_regulatory_domains.GenesTSSList.load_genes_tss_file(
-            genes_tss_filename=create_regulatory_domains.default_genes_tss_filename
+            genes_tss_filename=genes_tss_filename_dict[VCFmut.genomic_fasta.assembly]
         )
 
         # Calculate the regulatory domains for each gene.
@@ -196,7 +237,8 @@ class VCFmut:
             maximum_extension=create_regulatory_domains.default_maximum_extension,
             basal_up=create_regulatory_domains.default_basal_up,
             basal_down=create_regulatory_domains.default_basal_down,
-            chrom_sizes=create_regulatory_domains.ChromSizes()
+            chrom_sizes=create_regulatory_domains.ChromSizes(VCFmut.genomic_fasta.chrom_sizes_dict),
+            assembly=VCFmut.genomic_fasta.assembly
         )
 
         # Store start and end position, tss and strand of each regulatory domain in a per chromosome numpy array.
