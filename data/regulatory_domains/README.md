@@ -154,7 +154,7 @@ Press **get output**.
 **Select Fields from mm9.knownCanonical**:
 
 |     Field     |                          Description                          |
-| -------     : | ------------------------------------------------------------- |
+| ------------: | ------------------------------------------------------------- |
 | **clusterId** | Which cluster of transcripts this belongs to in knownIsoforms |
 
 
@@ -217,7 +217,7 @@ Press **get output**.
 **Select Fields from mm10.knownCanonical**:
 
 |     Field     |                          Description                          |
-| -------     : | ------------------------------------------------------------- |
+| ------------: | ------------------------------------------------------------- |
 | **clusterId** | Which cluster of transcripts this belongs to in knownIsoforms |
 
 
