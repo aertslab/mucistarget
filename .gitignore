@@ -3,8 +3,25 @@
 ._*
 *.DS_Store
 
-# Ignore data directory.
-/data/
+# Ignore everything in the data directory except README.md files.
+!/data/
+/data/*
+
+!/data/genomic_fasta/
+/data/genomic_fasta/*
+!/data/genomic_fasta/README.md
+
+!/data/motifs/
+/data/motifs/*
+!/data/motifs/README.md
+
+!/data/regulatory_domains/
+/data/regulatory_domains/*
+!/data/regulatory_domains/README.md
+
+!/data/tads/
+/data/tads/*
+!/data/tads/README.md
 
 # Ignore PyCharm directory.
 /.idea/
