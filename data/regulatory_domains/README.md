@@ -363,7 +363,7 @@ convert_knownCanonical_full_table_to_GREAT_TSS_file () {
             }
         }' \
         "${knownCanonical_full_table_filename}" \
-      | sort -k 2V -k 3n
+      | sort -k 2V,2V -k 3n,3n
 }
 ```
 
@@ -378,13 +378,14 @@ for assembly in ${assemblies} ; do
     # Convert knownCanonical full table to TSS TSV file.
     convert_knownCanonical_full_table_to_GREAT_TSS_file "${assembly}.knownCanonical.full_table.tsv" "${assembly}" > "${assembly}.tss.tsv";
     
-    # Create BED TSS file for loading in UCSC.
+    # Create BED TSS file for knownCanononical genes for viewing in UCSC genome browser.
     awk -F '\t' -v 'OFS=\t' '{print $2, $3, $3 + 1, $5, "1000", $4}' "${assembly}.tss.tsv" > "${assembly}.tss.bed";
 done
 ```
 
 If you want to check the regulatory domains that will be used by `mucistarget.py`, run the following from the root of
-this git repo:
+this git repo and look at `${mucistarget_git_root_dir}/data/regulatory_domains/${assembly}.regdoms.bed` in
+[UCSC genome browser](http://genome.ucsc.edu/cgi-bin/hgGateway):
 
 ```bash
 # Specify assemblies of interest.
@@ -394,7 +395,8 @@ assemblies='hg19 hg38 mm9 mm10';
 mucistarget_git_root_dir='.'
 
 for assembly in ${assemblies} ; do
-    # Create regulatory domains BED file for assembly: "${mucistarget_git_root_dir}/data/regulatory_domains/${assembly}.regdoms.bed"
+    # Create regulatory domains BED file for assembly:
+    #   "${mucistarget_git_root_dir}/data/regulatory_domains/${assembly}.regdoms.bed"
     ./create_regulatory_domains.py \
         --basal-up 5000 \
         --basal-down 1000 \
