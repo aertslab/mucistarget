@@ -383,21 +383,21 @@ for assembly in ${assemblies} ; do
 done
 ```
 
-If you want to check the regulatory domains that will be used by `mucistarget.py`, run the following from the root of
-this git repo and look at `${mucistarget_git_root_dir}/data/regulatory_domains/${assembly}.regdoms.bed` in
-[UCSC genome browser](http://genome.ucsc.edu/cgi-bin/hgGateway):
+If you want to check the regulatory domains that will be used by `mucistarget.py`, run the following and look at
+`${mucistarget_git_root_dir}/data/regulatory_domains/${assembly}.regdoms.bed`
+in [UCSC genome browser](http://genome.ucsc.edu/cgi-bin/hgGateway):
 
 ```bash
 # Specify assemblies of interest.
 assemblies='hg19 hg38 mm9 mm10';
 
-# Go to root of mucistarget git repo or set the following variable correctly.
-mucistarget_git_root_dir='.'
+# Set the following variable correctly (absolute or correct relative path).
+mucistarget_git_root_dir='../..';
 
 for assembly in ${assemblies} ; do
     # Create regulatory domains BED file for assembly:
     #   "${mucistarget_git_root_dir}/data/regulatory_domains/${assembly}.regdoms.bed"
-    ./create_regulatory_domains.py \
+    "${mucistarget_git_root_dir}/create_regulatory_domains.py" \
         --basal-up 5000 \
         --basal-down 1000 \
         --max-ext 1000000 \
