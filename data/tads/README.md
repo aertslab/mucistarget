@@ -2,21 +2,36 @@
 
 ## Download TADs
 
+Download TADs in hg19, hg38, mm9 and mm10 predicted using pipeline described in
+[Topological domains in mammalian genomes identified by analysis of chromatin interactions.
+ Dixon JR, Selvaraj S, Yue F, Kim A, Li Y, Shen Y, Hu M, Liu JS, Ren B.
+ Nature. 2012 Apr 11;485(7398):376-80. doi: 10.1038/nature11082.
+](https://www.ncbi.nlm.nih.gov/pubmed/22495300)
+
+See [http://promoter.bx.psu.edu/hi-c/publications.html](http://promoter.bx.psu.edu/hi-c/publications.html)
+for included datasets.
+
 ```bash
 # Download TAD info.
-curl -O 'http://promoter.bx.psu.edu/hi-c/downloads/TAD-info.txt'
+wget 'http://promoter.bx.psu.edu/hi-c/downloads/TAD-info.txt'
 
 # Download TADs.
-curl -O 'http://promoter.bx.psu.edu/hi-c/downloads/hg19.TADs.zip'
-curl -O 'http://promoter.bx.psu.edu/hi-c/downloads/hg38.TADs.zip'
-curl -O 'http://promoter.bx.psu.edu/hi-c/downloads/mm9.TADs.zip'
-curl -O 'http://promoter.bx.psu.edu/hi-c/downloads/mm10.TADs.zip'
+wget 'http://promoter.bx.psu.edu/hi-c/downloads/hg19.TADs.zip'
+wget 'http://promoter.bx.psu.edu/hi-c/downloads/hg38.TADs.zip'
+wget 'http://promoter.bx.psu.edu/hi-c/downloads/mm9.TADs.zip'
+wget 'http://promoter.bx.psu.edu/hi-c/downloads/mm10.TADs.zip'
 ```
 
-## Create TAD bed files from raw files.
+
+
+## Create TAD BED files from raw files.
+
+Create TAD BED files from raw files:
+  - Cleanup filename a little bit.
+  - Add "chr" to chromosome name if necessary.
+
 
 ```bash
-
 # Extract TAD files in assembly specific directory.
 unzip hg19.TADs.zip -d hg19
 unzip mm9.TADs.zip -d mm9
@@ -27,7 +42,7 @@ unzip mm10.TADs.zip
 for assembly in hg19 hg38 mm9 mm10 ; do
     # Loop over all raw TAD files.
     for tad_file in ${assembly}/*.txt ${assembly}/*.domains ; do
-        # Skip ${tad_file} which contain "*.txt" or "*.domains".
+        # Skip ${tad_file} which contain "*.txt" or "*.domains" literally (no files matching glob pattern).
         if [ "${tad_file/\*./}" = "${tad_file}" ] ; then
             # Remove "-raw*" "_raw*" from TAD filename.
             tad_bed_file="${tad_file%?raw*}";
