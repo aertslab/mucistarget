@@ -51,7 +51,7 @@ for assembly in hg19 hg38 mm9 mm10 ; do
             TAD_name="${tad_bed_file##*/}";
 
             # Add "TADs_" in the beginning of the TAD BED file basename.
-            tad_bed_file="${tad_bed_file/\//\/TADs_}";
+            tad_bed_file="${tad_bed_file/\///TADs_}";
 
             # Add ".bed" extension to TAD BED filename.
             tad_bed_file="${tad_bed_file}.bed";
@@ -69,4 +69,22 @@ for assembly in hg19 hg38 mm9 mm10 ; do
         fi
     done
 done
+```
+
+
+
+## Remove raw TAD files.
+
+Raw TAD files can be removed.
+
+```bash
+# Remove raw TAD files as they are converted to BED files.
+for assembly in hg19 hg38 mm9 mm10 ; do
+    # Loop over all raw TAD files.
+    rm ${assembly}/*.txt ${assembly}/*.domains
+done
+
+# Remove downloaded TAD archive files.
+rm hg19.TADs.zip hg38.TADs.zip mm9.TADs.zip mm10.TADs.zip
+
 ```
