@@ -51,4 +51,27 @@ for assembly in ${assemblies} ; do
 done
 
 # 2bit files are not needed by mucistarget and can be removed.
+for assembly in ${assemblies} ; do
+    # Convert 2bit file to FASTA file for each assembly.
+    rm "${assembly}.2bit";
+done
+```
+
+
+
+## Create flattened FASTA file.
+
+Load each FASTA file with `pyfasta` so it creates:
+  - flattened FASTA file: `${assemlby}.fa.flat`
+  - pickle of the start, stop locations of each header in the FASTA file: `${assemlby}.fa.gdx`
+
+
+Start python3 interpreter and run:
+```python
+import pyfasta
+
+pyfasta.Fasta('hg19.fa')
+pyfasta.Fasta('hg38.fa')
+pyfasta.Fasta('mm9.fa')
+pyfasta.Fasta('mm10.fa')
 ```
