@@ -771,7 +771,7 @@ def main():
     total_start_time = time.time()
 
     if args.log_output_filename:
-        log_fh = open(args.log_output_filename, 'w', 1)
+        log_fh = open(args.log_output_filename, 'w', buffering=1, encoding='utf-8')
     else:
         log_fh = sys.stderr
 
