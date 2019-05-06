@@ -185,9 +185,10 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
 
     # Make wildtype and mutant FASTA sequence for each mutation.
     try:
-        fasta_string = '\n'.join([vcf_mut.make_fasta_for_wt_and_mut(bp_upstream=bp_extension_size,
-                                                                    bp_downstream=bp_extension_size)
-                                  for vcf_mut in vcf_muts]).encode('utf-8')
+        fasta_bytes_string = b'\n'.join([vcf_mut.make_fasta_for_wt_and_mut(bp_upstream=bp_extension_size,
+                                                                           bp_downstream=bp_extension_size
+                                                                           ).encode('utf-8')
+                                         for vcf_mut in vcf_muts])
     except ValueError as e:
         raise e
 
@@ -203,7 +204,7 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
 
     (clusterbuster_command_stdout_data, clusterbuster_command_stderr_data) = command.run_cmd(
         cmd=clusterbuster_command,
-        stdin=fasta_string
+        stdin=fasta_bytes_string
     )
 
     clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut = dict()
