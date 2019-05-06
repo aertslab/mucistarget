@@ -149,7 +149,8 @@ def get_all_mutations_that_overlap_with_regdoms_of_genes(vcf_mut_iterator, genes
 
 
 def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
-                                        vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict):
+                                        vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
+                                        log_fh=sys.stderr):
     """
     Write all mutations and their associated genes and distance of the mutation to the TSS to a file.
 
@@ -159,10 +160,16 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
         OrderedDict with VCFmut objects as keys and as values a dictionary of gene names as keys and distance of the
         mutation to the TSS and TSS as values.
         This dictionary can be made with get_all_mutations_that_overlap_with_regdoms_of_genes.
+    :param log_fh:
+        File handle to which the progress information is written.
     :return:
     """
 
     import mutations
+
+    print('Write mutations to associated gene output file: ', end='', file=log_fh)
+
+    mut_to_associated_genes_start_time = time.time()
 
     with open(mut_to_associated_genes_output_filename, 'w') as mut_to_associated_genes_fh:
         # Sort TADs identifiers.
@@ -208,6 +215,11 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
                       *tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list if tads_ids else '',
                       sep='\t',
                       file=mut_to_associated_genes_fh)
+
+    mut_to_associated_genes_end_time = time.time()
+
+    print('{0:f} seconds.'.format(mut_to_associated_genes_end_time - mut_to_associated_genes_start_time),
+          file=log_fh)
 
 
 def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
@@ -897,7 +909,8 @@ def main():
         # Write all mutations and their associated genes and distance of the mutation to the TSS to a file.
         write_mut_to_associated_gene_output(
             mut_to_associated_genes_output_filename=args.mut_to_associated_genes_output_filename,
-            vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict
+            vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict=vcf_mut_to_associated_genes_and_distance_to_tss_and_tss_dict,
+            log_fh=log_fh
         )
 
     if args.clusterbuster_output_filename:
