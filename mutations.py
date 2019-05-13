@@ -352,7 +352,7 @@ class VCFmut:
         try:
             # Fix zero-based start coordinate position to one-based coordinate position.
             start = int(start) + 1
-        except:
+        except ValueError:
             raise ValueError(
                 'Mutation position {0:s} is not an integer ({1:s} zero_based_no_ref_specified).'.format(
                     str(start),
@@ -560,7 +560,7 @@ class VCFmut:
 
         try:
             self.start = int(start)
-        except:
+        except ValueError:
             raise ValueError(
                 'Mutation position {0:s} is not an integer ({1:s}).'.format(str(start), self.mut_line)
             )
