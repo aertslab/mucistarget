@@ -174,8 +174,8 @@ def calculate_motiflocator_delta_scores(fasta_string,
                 # sequences and starts at that position where the last position of the motif overlaps with the first
                 # position of the reference/mutation where the mutation is introduced.
                 lowest_motif_start_pos_to_consider = (
-                    bp_upstream + 1 -
-                    (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1)
+                    bp_upstream + 1
+                    - (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1)
                 )
 
                 if is_wt:
@@ -185,13 +185,13 @@ def calculate_motiflocator_delta_scores(fasta_string,
                     # position of the motif overlaps with the last position of the reference sequence which will be
                     # altered by the mutation.
                     highest_motif_end_pos_to_consider = (
-                        (bp_upstream + 1) +
-                        (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1) +
-                        (len(vcf_mut.ref) - 1)
+                        (bp_upstream + 1)
+                        + (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1)
+                        + (len(vcf_mut.ref) - 1)
                     )
 
-                    if (motif_start_pos >= lowest_motif_start_pos_to_consider and
-                                motif_end_pos <= highest_motif_end_pos_to_consider):
+                    if (motif_start_pos >= lowest_motif_start_pos_to_consider
+                            and motif_end_pos <= highest_motif_end_pos_to_consider):
                         if motiflocator_max_scores_and_consensus_for_wt_mut[motif_id][0][0] < score:
                             # Update maximum MotifLocator score and consensus sequence for wildtype sequence for the
                             # current motif.
@@ -203,13 +203,13 @@ def calculate_motiflocator_delta_scores(fasta_string,
                     # position of the motif overlaps with the last position of the mutant sequence which will be altered
                     # by the mutation.
                     highest_motif_end_pos_to_consider = (
-                        (bp_upstream + 1) +
-                        (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1) +
-                        (len(vcf_mut.mut) - 1)
+                        (bp_upstream + 1)
+                        + (motifsinfo.MotifsInfo.get_motif_length(motif_id) - 1)
+                        + (len(vcf_mut.mut) - 1)
                     )
 
-                    if (motif_start_pos >= lowest_motif_start_pos_to_consider and
-                                motif_end_pos <= highest_motif_end_pos_to_consider):
+                    if (motif_start_pos >= lowest_motif_start_pos_to_consider
+                            and motif_end_pos <= highest_motif_end_pos_to_consider):
                         if motiflocator_max_scores_and_consensus_for_wt_mut[motif_id][1][0] < score:
                             # Update maximum MotifLocator score and consensus sequence for mutant sequence for the
                             # current motif.

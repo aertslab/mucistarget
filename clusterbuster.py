@@ -227,8 +227,8 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
                 # sequences and starts at that position where the last position of the motif overlaps with the first
                 # position of the reference/mutation where the mutation is introduced.
                 lowest_motif_start_pos_to_consider = (
-                    bp_upstream + 1 -
-                    (motif_length - 1)
+                    bp_upstream + 1
+                    - (motif_length - 1)
                 )
 
                 if is_wt:
@@ -238,9 +238,9 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
                     # position of the motif overlaps with the last position of the reference sequence which will be
                     # altered by the mutation.
                     highest_motif_end_pos_to_consider = (
-                        (bp_upstream + 1) +
-                        (motif_length - 1) +
-                        (len(vcf_mut.ref) - 1)
+                        (bp_upstream + 1)
+                        + (motif_length - 1)
+                        + (len(vcf_mut.ref) - 1)
                     )
                 else:
                     # For mutated sequence.
@@ -249,9 +249,9 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
                     # position of the motif overlaps with the last position of the mutant sequence which will be altered
                     # by the mutation.
                     highest_motif_end_pos_to_consider = (
-                        (bp_upstream + 1) +
-                        (motif_length - 1) +
-                        (len(vcf_mut.mut) - 1)
+                        (bp_upstream + 1)
+                        + (motif_length - 1)
+                        + (len(vcf_mut.mut) - 1)
                     )
 
                 continue
@@ -262,8 +262,8 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
                 crm_start_pos = int(crm_start_pos_str)
                 crm_end_pos = int(crm_end_pos_str)
 
-                if (crm_start_pos <= highest_motif_end_pos_to_consider and
-                            crm_end_pos >= lowest_motif_start_pos_to_consider):
+                if (crm_start_pos <= highest_motif_end_pos_to_consider
+                        and crm_end_pos >= lowest_motif_start_pos_to_consider):
                     # Current CRM contains the mutation position.
                     consider_current_crm = True
                 else:
@@ -309,8 +309,8 @@ def calculate_clusterbuster_delta_scores(vcf_muts,
                         motif_end_pos = int(motif_end_pos_str)
                         motif_score = float(motif_score_str)
 
-                        if (motif_start_pos >= lowest_motif_start_pos_to_consider and
-                                    motif_end_pos <= highest_motif_end_pos_to_consider):
+                        if (motif_start_pos >= lowest_motif_start_pos_to_consider
+                                and motif_end_pos <= highest_motif_end_pos_to_consider):
 
                             if is_wt:
                                 if clusterbuster_max_crm_scores_and_max_motif_scores_and_consensus_for_wt_mut[vcf_mut][0][1] < motif_score:

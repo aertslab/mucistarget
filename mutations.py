@@ -16,80 +16,80 @@ import create_regulatory_domains
 fasta_filename_dict = {
     'dm3': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'genomic_fasta',
-            'dm3.fa'
-        ),
+        'data',
+        'genomic_fasta',
+        'dm3.fa'
+    ),
     'dm6': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'genomic_fasta',
-            'dm6.fa'
-        ),
+        'data',
+        'genomic_fasta',
+        'dm6.fa'
+    ),
     'hg19': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'genomic_fasta',
-            'hg19.fa'
-        ),
+        'data',
+        'genomic_fasta',
+        'hg19.fa'
+    ),
     'hg38': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'genomic_fasta',
-            'hg38.fa'
-        ),
+        'data',
+        'genomic_fasta',
+        'hg38.fa'
+    ),
     'mm9': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'genomic_fasta',
-            'mm9.fa'
-        ),
+        'data',
+        'genomic_fasta',
+        'mm9.fa'
+    ),
     'mm10': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'genomic_fasta',
-            'mm10.fa'
-        ),
+        'data',
+        'genomic_fasta',
+        'mm10.fa'
+    ),
 }
 
 
 genes_tss_filename_dict = {
     'dm3': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'regulatory_domains',
-            'dm3.tss.tsv'
-        ),
+        'data',
+        'regulatory_domains',
+        'dm3.tss.tsv'
+    ),
     'dm6': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'regulatory_domains',
-            'dm6.tss.tsv'
-        ),
+        'data',
+        'regulatory_domains',
+        'dm6.tss.tsv'
+    ),
     'hg19': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'regulatory_domains',
-            'hg19.tss.tsv'
-        ),
+        'data',
+        'regulatory_domains',
+        'hg19.tss.tsv'
+    ),
     'hg38': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'regulatory_domains',
-            'hg38.tss.tsv'
-        ),
+        'data',
+        'regulatory_domains',
+        'hg38.tss.tsv'
+    ),
     'mm9': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'regulatory_domains',
-            'mm9.tss.tsv'
-        ),
+        'data',
+        'regulatory_domains',
+        'mm9.tss.tsv'
+    ),
     'mm10': os.path.join(
         os.path.dirname(__file__),
-            'data',
-            'regulatory_domains',
-            'mm10.tss.tsv'
-        ),
+        'data',
+        'regulatory_domains',
+        'mm10.tss.tsv'
+    ),
 }
 
 
@@ -97,7 +97,7 @@ class GenomicFasta:
     def __init__(self, fasta_filename, assembly):
         self.fasta_sequences = pyfasta.Fasta(fasta_filename)
 
-        # Calculate chromosome sizes from file index positions for end and start in flattened FASTA file.
+        # Calculate chromosome sizes from file index positions from starts and ends in flattened FASTA file.
         self.chrom_sizes_dict = {
             chrom: index_pos[1] - index_pos[0] for chrom, index_pos in self.fasta_sequences.index.items()
         }
@@ -178,7 +178,7 @@ class VCFmut:
 
         :param fasta_filename: Genomic FASTA filename.
         :param assembly: Assembly version.
-        :return: 
+        :return:
         """
 
         VCFmut.genomic_fasta = GenomicFasta(fasta_filename=fasta_filename, assembly=assembly)
@@ -188,7 +188,7 @@ class VCFmut:
         """
         Set regulatory domains for VCFmut class.
 
-        :return: 
+        :return:
         """
 
         # Create a list of GeneTSS objects sorted by chromosome name,
@@ -235,7 +235,7 @@ class VCFmut:
         """
         Set TAD domains for human (hg19) VCFmut class.
 
-        :return: 
+        :return:
         """
 
         # Load TADs for primary tissues and cell types and store start and end position of each TAD in a per chromosome
@@ -943,10 +943,10 @@ class VCFmut:
         # Set mutation sequence, so start "N" can be changed to reference sequence if necessary.
         mut = self.mut
 
-        if (allow_first_reference_base_to_be_N and
-                    self.ref.upper()[0] == 'N' and
-                    self.mut.upper()[0] == 'N' and
-                (self.is_deletion or self.is_insertion)):
+        if (allow_first_reference_base_to_be_N
+                and self.ref.upper()[0] == 'N'
+                and self.mut.upper()[0] == 'N'
+                and (self.is_deletion or self.is_insertion)):
             # When allow_first_reference_base_to_be_N is set to False, compare only from the
             # reference sequence from the second nucleotide position onwards with the genomic
             # reference nucleotides for deletions or insertions.

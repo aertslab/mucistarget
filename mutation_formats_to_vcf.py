@@ -19,57 +19,67 @@ def main():
         description='Supported input file types.'
     )
     input_mutually_exclusive_group = input_group.add_mutually_exclusive_group(required=True)
-    input_mutually_exclusive_group.add_argument('--mut-ids',
-                       dest='mut_ids_filename',
-                       action='store',
-                       type=str,
-                       required=False,
-                       help='File with mutation IDs: '
-                            'chr10__100038800__TTTTTG__T__DEL '
-                            'chr10__10011659__A__AAT__INS '
-                            'chr10__100061062__C__T__SNV')
-    input_mutually_exclusive_group.add_argument('--bedlike-mut-ids',
-                       dest='bedlike_mut_ids_filename',
-                       action='store',
-                       type=str,
-                       required=False,
-                       help='File with BED-like mutation IDs: '
-                            'chr10_100038800_100038801_TTTTG_-----_DEL '
-                            'chr10_10011659_10011660_--_AT_INS '
-                            'chr10_100142677_100142678_T_-_INDEL '
-                            'chr10_100061061_100061062_C_T_SNP '
-                            'chr10_100038800_100038801_TTTTG_----- '
-                            'chr10_100038800_100038801_TTTTG_- '
-                            'chr10_10011659_10011660_--_AT '
-                            'chr10_10011659_10011660_-_AT '
-                            'chr10_100142677_100142678_T_- '
-                            'chr10_100061061_100061062_C_T')
-    input_mutually_exclusive_group.add_argument('--complete-genomics',
-                       dest='complete_genomics_filename',
-                       action='store',
-                       type=str,
-                       required=False,
-                       help='File with Complete Genomics mutation calls.')
+    input_mutually_exclusive_group.add_argument(
+        '--mut-ids',
+        dest='mut_ids_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='File with mutation IDs: '
+             'chr10__100038800__TTTTTG__T__DEL '
+             'chr10__10011659__A__AAT__INS '
+             'chr10__100061062__C__T__SNV'
+    )
+    input_mutually_exclusive_group.add_argument(
+        '--bedlike-mut-ids',
+        dest='bedlike_mut_ids_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='File with BED-like mutation IDs: '
+             'chr10_100038800_100038801_TTTTG_-----_DEL '
+             'chr10_10011659_10011660_--_AT_INS '
+             'chr10_100142677_100142678_T_-_INDEL '
+             'chr10_100061061_100061062_C_T_SNP '
+             'chr10_100038800_100038801_TTTTG_----- '
+             'chr10_100038800_100038801_TTTTG_- '
+             'chr10_10011659_10011660_--_AT '
+             'chr10_10011659_10011660_-_AT '
+             'chr10_100142677_100142678_T_- '
+             'chr10_100061061_100061062_C_T'
+    )
+    input_mutually_exclusive_group.add_argument(
+        '--complete-genomics',
+        dest='complete_genomics_filename',
+        action='store',
+        type=str,
+        required=False,
+        help='File with Complete Genomics mutation calls.'
+    )
 
-    parser.add_argument('--column-number',
-                       dest='column_number',
-                       action='store',
-                       type=int,
-                       required=False,
-                       default=1,
-                       help='Column number which contains the (BED-like) mutation ID (default: 1). ')
+    parser.add_argument(
+        '--column-number',
+        dest='column_number',
+        action='store',
+        type=int,
+        required=False,
+        default=1,
+        help='Column number which contains the (BED-like) mutation ID (default: 1). '
+    )
 
     output_group = parser.add_argument_group(
         title='Output file types',
         description='Supported output file types.'
     )
-    output_group.add_argument('--vcf',
-                       dest='vcf_filename',
-                       action='store',
-                       type=str,
-                       required=True,
-                       help='VCF output file with mutations (first 5 columns are written in VCF format, '
-                            'rest of the line will be the content of the original line).')
+    output_group.add_argument(
+        '--vcf',
+        dest='vcf_filename',
+        action='store',
+        type=str,
+        required=True,
+        help='VCF output file with mutations (first 5 columns are written in VCF format, '
+             'rest of the line will be the content of the original line).'
+    )
 
     args = parser.parse_args()
 

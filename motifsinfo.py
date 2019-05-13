@@ -418,8 +418,8 @@ class MotifsInfo:
         selected_motif_ids = [
             motif_id
             for motif_id in motif_ids
-            if (min_motif_length is None or MotifsInfo.get_motif_length(motif_id) >= min_motif_length) and
-               (max_motif_length is None or MotifsInfo.get_motif_length(motif_id) <= max_motif_length)
+            if (min_motif_length is None or MotifsInfo.get_motif_length(motif_id) >= min_motif_length)
+               and (max_motif_length is None or MotifsInfo.get_motif_length(motif_id) <= max_motif_length)
         ]
 
         if header:
