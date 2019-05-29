@@ -198,15 +198,16 @@ def write_mut_to_associated_gene_output(mut_to_associated_genes_output_filename,
             for associated_gene, distance_to_tss_and_tss in associated_genes_and_distance_to_tss_and_tss_dict.items():
                 distance_to_tss, tss = distance_to_tss_and_tss
 
-                tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list = [
-                    1
-                    if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                        tads_id=tads_id,
-                        tss=tss
-                    )
-                    else 0
-                    for tads_id in tads_ids
-                ]
+                if tads_ids:
+                    tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list = [
+                        1
+                        if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                            tads_id=tads_id,
+                            tss=tss
+                        )
+                        else 0
+                        for tads_id in tads_ids
+                    ]
 
                 print(vcf_mut,
                       associated_gene,
@@ -330,15 +331,16 @@ def calculate_and_write_clusterbuster_crm_and_motif_delta_scores(vcf_mut_to_asso
 
                     distance_to_tss, tss = distance_to_tss_and_tss
 
-                    tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list = [
-                        1
-                        if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                            tads_id=tads_id,
-                            tss=tss
-                        )
-                        else 0
-                        for tads_id in tads_ids
-                    ]
+                    if tads_ids:
+                        tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list = [
+                            1
+                            if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                                tads_id=tads_id,
+                                tss=tss
+                            )
+                            else 0
+                            for tads_id in tads_ids
+                        ]
 
                     print(vcf_mut,
                           associated_gene,
@@ -554,15 +556,16 @@ def calculate_and_write_motiflocator_delta_scores(vcf_mut_to_associated_genes_an
 
                     distance_to_tss, tss = distance_to_tss_and_tss
 
-                    tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list = [
-                        1
-                        if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
-                            tads_id=tads_id,
-                            tss=tss
-                        )
-                        else 0
-                        for tads_id in tads_ids
-                    ]
+                    if tads_ids:
+                        tss_of_associated_gene_in_same_tad_as_mutation_for_tads_list = [
+                            1
+                            if vcf_mut.tss_of_associated_gene_in_same_tad_as_mutation(
+                                tads_id=tads_id,
+                                tss=tss
+                            )
+                            else 0
+                            for tads_id in tads_ids
+                        ]
 
                     print(vcf_mut,
                           associated_gene,
