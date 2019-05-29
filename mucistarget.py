@@ -765,6 +765,18 @@ def main():
         help='TSV output file with mutation info and associated gene name and distance of mutation to TSS.'
     )
 
+    tads_group = parser.add_argument_group(
+        title='TADs info',
+        description='Add TADs info to output files.'
+    )
+    tads_group.add_argument(
+        '--tads',
+        dest='enable_tads_info',
+        action='store_true',
+        required=False,
+        help='Indicate for each mutation if mutation and TSS of associated gene are located in same TAD region or not.'
+    )
+
     logging_group = parser.add_argument_group(
         title='Logging',
         description='Specify progress logging and some statistics.'
@@ -805,9 +817,12 @@ def main():
     )
 
     if args.assembly == 'hg19' or args.assembly == 'hg38' or args.assembly == 'mm9' or args.assembly == 'mm10':
-        # Set regulatory domains and TADs for VCFmut class.
+        # Set regulatory domains for VCFmut class.
         mutations.VCFmut.set_reg_doms()
-        mutations.VCFmut.set_tads()
+
+        if args.enable_tads_info:
+            # Set TADs for VCFmut class.
+            mutations.VCFmut.set_tads()
 
     if args.vcf_filename:
         print('Using mutation filename: "{0:s}"\n'.format(args.vcf_filename), file=log_fh)
