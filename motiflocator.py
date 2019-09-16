@@ -111,7 +111,7 @@ def calculate_motiflocator_delta_scores(fasta_string,
     Calculate MotifLocator delta scores between wildtype and mutant FASTA sequences.
 
     :param fasta_string: String with wildtype and mutant FASTA sequence constructed by VCFmut.make_fasta_for_wt_and_mut().
-    :param inclusive_matrix_filename: Filename with motifs in INCLUsive format to score with MotifLocator.
+    :param inclusive_matrix_filename: Filename with motifs in INCLUSive format to score with MotifLocator.
     :param motiflocator_path: Path to MotifLocator.
     :param background_motiflocator_filename: Background file used by MotifLocator.
     :param min_score_threshold: Minimum MotifLocator score threshold for wildtype or mutant to keep the result.

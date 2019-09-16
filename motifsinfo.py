@@ -37,7 +37,7 @@ class MotifPaths:
     default_clusterbuster_motifs_extension = '.cb'
 
     # Extension used for a motif filename in INCLUSive format.
-    default_inclusive_motifs_extension = '.INCLUsive.txt'
+    default_inclusive_motifs_extension = '.INCLUSive.txt'
 
     @staticmethod
     def set_motif_collection_version(motif_collection_version):
@@ -97,7 +97,7 @@ def get_motif_name_and_motif_filenames_and_motif_lengths_and_pwms(
     """
     Get motif names and motif filenames and motif lengths and PWMs.
 
-    :param inclusive_motifs_dir: Directory with motifs in INCLUsive format.
+    :param inclusive_motifs_dir: Directory with motifs in INCLUSive format.
     :param inclusive_motifs_extension: Extension used for a motif filename in INCLUSive format.
 
     :return: (motif_id_to_motif_name_dict,
